@@ -1,0 +1,18 @@
+<launch>
+  <env name="ROSCONSOLE_CONFIG_FILE" value="$(find esa_servo)/rosconsole.conf"/>
+
+  <rosparam command="load" file="$(find esa_servo)/config/hardware.yaml"/>
+  <rosparam command="load" file="$(find esa_servo)/config/controllers.yaml"/>
+  <rosparam command="load" file="$(find esa_servo)/config/joint_limits.yaml"/>
+
+  <!-- -->
+  <node name="ewdl_hardware_interface" launch-prefix="ethercat_grant" pkg="esa_servo" type="ewdl_hardware_interface" output="screen">
+    <rosparam ns="ethercat" command="load" file="$(find esa_servo)/config/ethercat.yaml"/>
+  </node>
+
+  <!-- -->
+  <!--node name="controller_loader" pkg="controller_manager" type="spawner" output="screen"
+    args="/EWDL/controller/state
+          /EWDL/controller/position/rail_joint"/-->
+
+</launch>

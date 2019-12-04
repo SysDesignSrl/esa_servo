@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>esa_servo</name>
+  <version>0.0.0</version>
+  <description>
+    The esa_servo package
+  </description>
+  <license>TODO</license>
+
+  <author email="nicola@sysdesign.it">Nicola Conti</author>
+  <maintainer email="nicola@sysdesign.it">Nicola Conti</maintainer>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <!-- Catkin Dependencies -->
+  <depend>roscpp</depend>
+  <depend>controller_manager</depend>
+  <depend>hardware_interface</depend>
+  <depend>soem</depend>
+  <!-- System Dependencies -->
+  <depend>boost</depend>
+
+</package>

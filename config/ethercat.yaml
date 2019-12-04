@@ -1,0 +1,8 @@
+#####################
+## EtherCAT Master ##
+#####################
+
+ifname: "enp7s0f1"
+
+slaves:
+  - "EWDL Servo"
