@@ -168,7 +168,6 @@ public:
   void close()
   {
     ec_master.close();
-    ROS_INFO("EtherCAT socket %s closed.", "");
   }
 
 };

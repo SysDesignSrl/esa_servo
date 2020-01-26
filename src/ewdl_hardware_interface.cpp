@@ -32,10 +32,15 @@ int main (int argc, char* argv[])
 
   // Hardware Interface
   esa::ewdl::EWDL_HardwareInterface ewdl_hw(node);
-  ewdl_hw.init();
+
+  if (!ewdl_hw.init())
+  {
+    ewdl_hw.close();
+    return -1;
+  }
 
   // Controller Manager
-  controller_manager::ControllerManager controller_manager(&ewdl_hw);
+  controller_manager::ControllerManager controller_manager(&ewdl_hw, node);
 
 
   if (!ewdl_hw.start())

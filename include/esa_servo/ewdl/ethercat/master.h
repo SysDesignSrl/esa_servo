@@ -21,6 +21,7 @@
 
 namespace esa { namespace ewdl { namespace ethercat {
 
+
 int slave_setup(uint16 slave)
 {
   int wkc = 0;
@@ -39,6 +40,7 @@ int slave_setup(uint16 slave)
 
   return wkc;
 }
+
 
 class Master
 {
@@ -61,41 +63,68 @@ class Master
     return true;
   }
 
-  void print_ec_state(int ec_state)
+
+  void print_ec_state(int slave, int ec_state)
   {
     switch (ec_state)
     {
       case EC_STATE_NONE:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_NONE");
+        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_NONE");
         break;
       case EC_STATE_BOOT:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_BOOT");
+        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_BOOT");
         break;
       case EC_STATE_INIT:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_INIT");
+        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_INIT");
         break;
       case EC_STATE_PRE_OP:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_PRE_OP");
+        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_PRE_OP");
         break;
       case EC_STATE_SAFE_OP:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_SAFE_OP");
+        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_SAFE_OP");
         break;
       case EC_STATE_OPERATIONAL:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_OPERATIONAL");
+        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_OPERATIONAL");
         break;
       //case EC_STATE_ACK:
       //  ROS_INFO("%s: ESM: %s", ec_slave[slave].name, "EC_STATE_ACK");
       //  break;
       case EC_STATE_PRE_OP + EC_STATE_ERROR:
-        ROS_ERROR("%s: %s + %s", ec_slave[EWDL_Z1].name, "EC_STATE_ERROR", "EC_STATE_PRE_OP");
+        ROS_ERROR("%s: %s + %s", ec_slave[slave].name, "EC_STATE_ERROR", "EC_STATE_PRE_OP");
         break;
       case EC_STATE_SAFE_OP + EC_STATE_ERROR:
-        ROS_ERROR("%s: %s + %s", ec_slave[EWDL_Z1].name, "EC_STATE_ERROR", "EC_STATE_SAFE_OP");
+        ROS_ERROR("%s: %s + %s", ec_slave[slave].name, "EC_STATE_ERROR", "EC_STATE_SAFE_OP");
         break;
       case EC_STATE_OPERATIONAL + EC_STATE_ERROR:
-        ROS_ERROR("%s: %s + %s", ec_slave[EWDL_Z1].name, "EC_STATE_ERROR", "EC_STATE_OPERATIONAL");
+        ROS_ERROR("%s: %s + %s", ec_slave[slave].name, "EC_STATE_ERROR", "EC_STATE_OPERATIONAL");
         break;
     }
+  }
+
+
+  void print_sm(int slave, int sm)
+  {
+    ROS_DEBUG("SM%d A:%4.4x L:%4d F:%8.8x Type:%d",
+      sm,
+      ec_slave[slave].SM[sm].StartAddr,
+      ec_slave[slave].SM[sm].SMlength,
+      ec_slave[slave].SM[sm].SMflags,
+      ec_slave[slave].SMtype[sm]);
+  }
+
+
+  void print_fmmu(int slave, int fmmu)
+  {
+    ROS_DEBUG("FMMU%d Ls:%.8x Ll:%4.2d Lsb:%d Leb:%d Ps:%.4x Psb:%d Ty:%.2d Act:%.2d",
+      fmmu,
+      ec_slave[slave].FMMU[fmmu].LogStart,
+      ec_slave[slave].FMMU[fmmu].LogLength,
+      ec_slave[slave].FMMU[fmmu].LogStartbit,
+      ec_slave[slave].FMMU[fmmu].LogEndbit,
+      ec_slave[slave].FMMU[fmmu].PhysStart,
+      ec_slave[slave].FMMU[fmmu].PhysStartBit,
+      ec_slave[slave].FMMU[fmmu].FMMUtype,
+      ec_slave[slave].FMMU[fmmu].FMMUactive);
   }
 
 public:
@@ -112,52 +141,41 @@ public:
   {
     if (!ec_init(ifname.c_str()) > 0)
     {
-      ROS_ERROR("Coludn't initialize SOEM socket: %s", ifname.c_str());
+      ROS_FATAL("Coludn't initialize EtherCAT Master socket on: %s", ifname.c_str());
       return false;
     }
 
+    ROS_INFO("EtherCAT socket on: %s", ifname.c_str());
+
+
     if (!ec_config_init(FALSE) > 0)
     {
-      ROS_ERROR("Coludn't find and configure any slave.");
+      ROS_FATAL("Coludn't find and configure any slave.");
       return false;
     }
 
     ROS_INFO("Slaves found and configured: %d", ec_slavecount);
+
+
     ec_state = ec_statecheck(0, EC_STATE_PRE_OP, EC_TIMEOUTSTATE);
-    print_ec_state(ec_state);
+    print_ec_state(0, ec_state);
 
-    // SM0
-    ROS_DEBUG("SM0 A:%4.4x L:%4d F:%8.8x Type:%d",
-      ec_slave[EWDL_Z1].SM[0].StartAddr,
-      ec_slave[EWDL_Z1].SM[0].SMlength,
-      ec_slave[EWDL_Z1].SM[0].SMflags,
-      ec_slave[EWDL_Z1].SMtype[0]);
+    // print slaves configuration
+    for (int slave = 1; slave <= ec_slavecount; slave++)
+    {
+      print_sm(slave, 0);     // SM0
+      print_sm(slave, 1);     // SM1
+      print_sm(slave, 2);     // SM2 (output)
+      print_sm(slave, 3);     // SM3 (input)
+      print_fmmu(slave, 0);   // FMMU0
+      print_fmmu(slave, 1);   // FMUU1
+    }
 
-    // SM1
-    ROS_DEBUG("SM1 A:%4.4x L:%4d F:%8.8x Type:%d",
-      ec_slave[EWDL_Z1].SM[1].StartAddr,
-      ec_slave[EWDL_Z1].SM[1].SMlength,
-      ec_slave[EWDL_Z1].SM[1].SMflags,
-      ec_slave[EWDL_Z1].SMtype[1]);
-
-    // SM2 (output)
-    ROS_DEBUG("SM2 A:%4.4x L:%4d F:%8.8x Type:%d",
-      ec_slave[EWDL_Z1].SM[2].StartAddr,
-      ec_slave[EWDL_Z1].SM[2].SMlength,
-      ec_slave[EWDL_Z1].SM[2].SMflags,
-      ec_slave[EWDL_Z1].SMtype[2]);
-
-    // SM3 (input)
-    ROS_DEBUG("SM3 A:%4.4x L:%4d F:%8.8x Type:%d",
-      ec_slave[EWDL_Z1].SM[3].StartAddr,
-      ec_slave[EWDL_Z1].SM[3].SMlength,
-      ec_slave[EWDL_Z1].SM[3].SMflags,
-      ec_slave[EWDL_Z1].SMtype[3]);
 
     // network configuration
     if (!network_configuration())
     {
-      ROS_ERROR("Mismatch of network units!");
+      ROS_FATAL("Mismatch of network units!");
       return false;
     }
 
@@ -178,29 +196,8 @@ public:
     }
 
 
-    ROS_DEBUG("FMMU0 Ls:%.8x Ll:%4.2d Lsb:%d Leb:%d Ps:%.4x Psb:%d Ty:%.2d Act:%.2d",
-      ec_slave[EWDL_Z1].FMMU[0].LogStart,
-      ec_slave[EWDL_Z1].FMMU[0].LogLength,
-      ec_slave[EWDL_Z1].FMMU[0].LogStartbit,
-      ec_slave[EWDL_Z1].FMMU[0].LogEndbit,
-      ec_slave[EWDL_Z1].FMMU[0].PhysStart,
-      ec_slave[EWDL_Z1].FMMU[0].PhysStartBit,
-      ec_slave[EWDL_Z1].FMMU[0].FMMUtype,
-      ec_slave[EWDL_Z1].FMMU[0].FMMUactive);
-
-    ROS_DEBUG("FMMU1 Ls:%.8x Ll:%4.2d Lsb:%d Leb:%d Ps:%.4x Psb:%d Ty:%.2d Act:%.2d",
-      ec_slave[EWDL_Z1].FMMU[1].LogStart,
-      ec_slave[EWDL_Z1].FMMU[1].LogLength,
-      ec_slave[EWDL_Z1].FMMU[1].LogStartbit,
-      ec_slave[EWDL_Z1].FMMU[1].LogEndbit,
-      ec_slave[EWDL_Z1].FMMU[1].PhysStart,
-      ec_slave[EWDL_Z1].FMMU[1].PhysStartBit,
-      ec_slave[EWDL_Z1].FMMU[1].FMMUtype,
-      ec_slave[EWDL_Z1].FMMU[1].FMMUactive);
-
-
     ec_state = ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE);
-    print_ec_state(ec_state);
+    print_ec_state(0, ec_state);
 
 
     // Enable Cyclic Synchronous Position Mode
@@ -287,7 +284,7 @@ public:
     ec_slave[EWDL_Z1].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
     ec_writestate(EWDL_Z1);
     ec_state = ec_statecheck(0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE);
-    print_ec_state(ec_state);
+    print_ec_state(0, ec_state);
 
     if (ec_state != EC_STATE_OPERATIONAL)
     {
@@ -314,6 +311,7 @@ public:
   void close()
   {
     ec_close();
+    ROS_INFO("EtherCAT socket closed.");
   }
 
 };
