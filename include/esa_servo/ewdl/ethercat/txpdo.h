@@ -4,8 +4,8 @@
 
 namespace esa { namespace ewdl { namespace ethercat { namespace pdo {
 
-struct TxPDO0 {
-
+struct TxPDO0
+{
   uint16 error_code = 0;
   uint16 status_word = 0;
   int8 mode_of_operation_display = 0;
@@ -18,8 +18,8 @@ struct TxPDO0 {
   int32 touch_probe_pos2_neg_value = 0;
   uint32 digital_inputs = 0;
 
-  void operator<<(uint8 *data_ptr) {
-
+  void operator<<(uint8 *data_ptr)
+  {
     error_code = 0x0000;
     status_word = 0x0000;
     mode_of_operation_display = 0x00;
@@ -31,7 +31,6 @@ struct TxPDO0 {
     touch_probe_pos2_pos_value = 0x00000000;
     touch_probe_pos2_neg_value = 0x00000000;
     digital_inputs = 0x00000000;
-
 
     error_code |= (0x00FF & *data_ptr++) << 0;
     error_code |= (0x00FF & *data_ptr++) << 8;
@@ -80,27 +79,26 @@ struct TxPDO0 {
     digital_inputs |= (0x000000FF & *data_ptr++) << 24;
   }
 
-/*
-  std::stream operator <<(std::stream &os, const T &obj) {
-    os << "RxPDO0:\n");
-    printf("\tErrorCode: %x\n", rx_pdo.error_code);
-    printf("\tStatusWord: %d\n", rx_pdo.status_word);
-    printf("\tModes of Operation Display: %d\n", rx_pdo.modes_of_operation_display);
-    printf("\tPosition Actual Value: %d\n", rx_pdo.position_actual_value);
-    printf("\tFollow Error Actual Value: %d\n", rx_pdo.follow_error_actual_value);
-    printf("\tTouch Probe Status: %d\n", rx_pdo.touch_probe_status);
-    printf("\tTouch probe pos1 neg value: %d\n", rx_pdo.touch_probe_pos1_neg_value);
-    printf("\tTouch probe pos1 pos value: %d\n", rx_pdo.touch_probe_pos1_pos_value);
-    printf("\tTouch probe pos2 pos value: %d\n", rx_pdo.touch_probe_pos2_pos_value);
-    printf("\tTouch probe pos2 neg value: %d\n", rx_pdo.touch_probe_pos2_neg_value);
-    printf("\tDigital Inputs: %.32x\n", rx_pdo.digital_inputs);
-  }
-*/
+  // std::stream operator <<(std::stream &os, const T &obj) {
+  //   os << "RxPDO0:\n");
+  //   printf("\tErrorCode: %x\n", rx_pdo.error_code);
+  //   printf("\tStatusWord: %d\n", rx_pdo.status_word);
+  //   printf("\tModes of Operation Display: %d\n", rx_pdo.modes_of_operation_display);
+  //   printf("\tPosition Actual Value: %d\n", rx_pdo.position_actual_value);
+  //   printf("\tFollow Error Actual Value: %d\n", rx_pdo.follow_error_actual_value);
+  //   printf("\tTouch Probe Status: %d\n", rx_pdo.touch_probe_status);
+  //   printf("\tTouch probe pos1 neg value: %d\n", rx_pdo.touch_probe_pos1_neg_value);
+  //   printf("\tTouch probe pos1 pos value: %d\n", rx_pdo.touch_probe_pos1_pos_value);
+  //   printf("\tTouch probe pos2 pos value: %d\n", rx_pdo.touch_probe_pos2_pos_value);
+  //   printf("\tTouch probe pos2 neg value: %d\n", rx_pdo.touch_probe_pos2_neg_value);
+  //   printf("\tDigital Inputs: %.32x\n", rx_pdo.digital_inputs);
+  // }
+
 };
 
 
-struct TxPDO1 {
-
+struct TxPDO1
+{
   uint16 error_code = 0;
   uint16 status_word = 0;
   int8 mode_of_operation_display = 0;
@@ -114,8 +112,8 @@ struct TxPDO1 {
   int32 touch_probe_pos2_neg_value = 0;
   uint32 digital_inputs = 0;
 
-  void operator<<(uint8 *data_ptr) {
-
+  void operator<<(uint8 *data_ptr)
+  {
     error_code = 0x0000;
     status_word = 0x0000;
     mode_of_operation_display = 0x00;
@@ -128,7 +126,6 @@ struct TxPDO1 {
     touch_probe_pos2_pos_value = 0x00000000;
     touch_probe_pos2_neg_value = 0x00000000;
     digital_inputs = 0x00000000;
-
 
     error_code |= (0x00FF & *data_ptr++) << 0;
     error_code |= (0x00FF & *data_ptr++) << 8;
@@ -182,27 +179,26 @@ struct TxPDO1 {
     digital_inputs |= (0x000000FF & *data_ptr++) << 24;
   }
 
-/*
-  std::stream operator <<(std::stream &os, const T &obj) {
-    os << "RxPDO0:\n");
-    printf("\tErrorCode: %x\n", rx_pdo.error_code);
-    printf("\tStatusWord: %d\n", rx_pdo.status_word);
-    printf("\tModes of Operation Display: %d\n", rx_pdo.modes_of_operation_display);
-    printf("\tPosition Actual Value: %d\n", rx_pdo.position_actual_value);
-    printf("\tFollow Error Actual Value: %d\n", rx_pdo.follow_error_actual_value);
-    printf("\tTouch Probe Status: %d\n", rx_pdo.touch_probe_status);
-    printf("\tTouch probe pos1 neg value: %d\n", rx_pdo.touch_probe_pos1_neg_value);
-    printf("\tTouch probe pos1 pos value: %d\n", rx_pdo.touch_probe_pos1_pos_value);
-    printf("\tTouch probe pos2 pos value: %d\n", rx_pdo.touch_probe_pos2_pos_value);
-    printf("\tTouch probe pos2 neg value: %d\n", rx_pdo.touch_probe_pos2_neg_value);
-    printf("\tDigital Inputs: %.32x\n", rx_pdo.digital_inputs);
-  }
-*/
+  // std::stream operator <<(std::stream &os, const T &obj) {
+  //   os << "RxPDO0:\n");
+  //   printf("\tErrorCode: %x\n", rx_pdo.error_code);
+  //   printf("\tStatusWord: %d\n", rx_pdo.status_word);
+  //   printf("\tModes of Operation Display: %d\n", rx_pdo.modes_of_operation_display);
+  //   printf("\tPosition Actual Value: %d\n", rx_pdo.position_actual_value);
+  //   printf("\tFollow Error Actual Value: %d\n", rx_pdo.follow_error_actual_value);
+  //   printf("\tTouch Probe Status: %d\n", rx_pdo.touch_probe_status);
+  //   printf("\tTouch probe pos1 neg value: %d\n", rx_pdo.touch_probe_pos1_neg_value);
+  //   printf("\tTouch probe pos1 pos value: %d\n", rx_pdo.touch_probe_pos1_pos_value);
+  //   printf("\tTouch probe pos2 pos value: %d\n", rx_pdo.touch_probe_pos2_pos_value);
+  //   printf("\tTouch probe pos2 neg value: %d\n", rx_pdo.touch_probe_pos2_neg_value);
+  //   printf("\tDigital Inputs: %.32x\n", rx_pdo.digital_inputs);
+  // }
+
 };
 
 
-struct TxPDO2 {
-
+struct TxPDO2
+{
   uint16 error_code = 0;
   uint16 status_word = 0;
   int8 mode_of_operation_display = 0;
@@ -211,8 +207,8 @@ struct TxPDO2 {
   int32 follow_error_actual_value = 0;
   uint32 digital_inputs = 0;
 
-  void operator<<(uint8 *data_ptr) {
-
+  void operator<<(uint8 *data_ptr)
+  {
     error_code = 0x0000;
     status_word = 0x0000;
     mode_of_operation_display = 0x00;
@@ -220,7 +216,6 @@ struct TxPDO2 {
     velocity_actual_value = 0x00000000;
     follow_error_actual_value = 0x00000000;
     digital_inputs = 0x00000000;
-
 
     error_code |= (0x00FF & *data_ptr++) << 0;
     error_code |= (0x00FF & *data_ptr++) << 8;
@@ -251,27 +246,26 @@ struct TxPDO2 {
     digital_inputs |= (0x000000FF & *data_ptr++) << 24;
   }
 
-/*
-  std::stream operator <<(std::stream &os, const T &obj) {
-    os << "RxPDO0:\n");
-    printf("\tErrorCode: %x\n", rx_pdo.error_code);
-    printf("\tStatusWord: %d\n", rx_pdo.status_word);
-    printf("\tModes of Operation Display: %d\n", rx_pdo.modes_of_operation_display);
-    printf("\tPosition Actual Value: %d\n", rx_pdo.position_actual_value);
-    printf("\tFollow Error Actual Value: %d\n", rx_pdo.follow_error_actual_value);
-    printf("\tTouch Probe Status: %d\n", rx_pdo.touch_probe_status);
-    printf("\tTouch probe pos1 neg value: %d\n", rx_pdo.touch_probe_pos1_neg_value);
-    printf("\tTouch probe pos1 pos value: %d\n", rx_pdo.touch_probe_pos1_pos_value);
-    printf("\tTouch probe pos2 pos value: %d\n", rx_pdo.touch_probe_pos2_pos_value);
-    printf("\tTouch probe pos2 neg value: %d\n", rx_pdo.touch_probe_pos2_neg_value);
-    printf("\tDigital Inputs: %.32x\n", rx_pdo.digital_inputs);
-  }
-*/
+  // std::stream operator <<(std::stream &os, const T &obj) {
+  //   os << "RxPDO0:\n");
+  //   printf("\tErrorCode: %x\n", rx_pdo.error_code);
+  //   printf("\tStatusWord: %d\n", rx_pdo.status_word);
+  //   printf("\tModes of Operation Display: %d\n", rx_pdo.modes_of_operation_display);
+  //   printf("\tPosition Actual Value: %d\n", rx_pdo.position_actual_value);
+  //   printf("\tFollow Error Actual Value: %d\n", rx_pdo.follow_error_actual_value);
+  //   printf("\tTouch Probe Status: %d\n", rx_pdo.touch_probe_status);
+  //   printf("\tTouch probe pos1 neg value: %d\n", rx_pdo.touch_probe_pos1_neg_value);
+  //   printf("\tTouch probe pos1 pos value: %d\n", rx_pdo.touch_probe_pos1_pos_value);
+  //   printf("\tTouch probe pos2 pos value: %d\n", rx_pdo.touch_probe_pos2_pos_value);
+  //   printf("\tTouch probe pos2 neg value: %d\n", rx_pdo.touch_probe_pos2_neg_value);
+  //   printf("\tDigital Inputs: %.32x\n", rx_pdo.digital_inputs);
+  // }
+
 };
 
 
-struct TxPDO3 {
-
+struct TxPDO3
+{
   uint16 error_code = 0;
   uint16 status_word = 0;
   int8 mode_of_operation_display = 0;
@@ -280,8 +274,8 @@ struct TxPDO3 {
   int32 follow_error_actual_value = 0;
   uint32 digital_inputs = 0;
 
-  void operator<<(uint8 *data_ptr) {
-
+  void operator<<(uint8 *data_ptr)
+  {
     error_code = 0x0000;
     status_word = 0x0000;
     mode_of_operation_display = 0x00;
@@ -289,7 +283,6 @@ struct TxPDO3 {
     velocity_actual_value = 0x00000000;
     follow_error_actual_value = 0x00000000;
     digital_inputs = 0x00000000;
-
 
     error_code |= (0x00FF & *data_ptr++) << 0;
     error_code |= (0x00FF & *data_ptr++) << 8;
@@ -320,23 +313,22 @@ struct TxPDO3 {
     digital_inputs |= (0x000000FF & *data_ptr++) << 24;
   }
 
-/*
-  std::stream operator <<(std::stream &os, const T &obj) {
-    os << "RxPDO0:\n");
-    printf("\tErrorCode: %x\n", rx_pdo.error_code);
-    printf("\tStatusWord: %d\n", rx_pdo.status_word);
-    printf("\tModes of Operation Display: %d\n", rx_pdo.modes_of_operation_display);
-    printf("\tPosition Actual Value: %d\n", rx_pdo.position_actual_value);
-    printf("\tFollow Error Actual Value: %d\n", rx_pdo.follow_error_actual_value);
-    printf("\tTouch Probe Status: %d\n", rx_pdo.touch_probe_status);
-    printf("\tTouch probe pos1 neg value: %d\n", rx_pdo.touch_probe_pos1_neg_value);
-    printf("\tTouch probe pos1 pos value: %d\n", rx_pdo.touch_probe_pos1_pos_value);
-    printf("\tTouch probe pos2 pos value: %d\n", rx_pdo.touch_probe_pos2_pos_value);
-    printf("\tTouch probe pos2 neg value: %d\n", rx_pdo.touch_probe_pos2_neg_value);
-    printf("\tDigital Inputs: %.32x\n", rx_pdo.digital_inputs);
-  }
-*/
+  // std::stream operator <<(std::stream &os, const T &obj) {
+  //   os << "RxPDO0:\n");
+  //   printf("\tErrorCode: %x\n", rx_pdo.error_code);
+  //   printf("\tStatusWord: %d\n", rx_pdo.status_word);
+  //   printf("\tModes of Operation Display: %d\n", rx_pdo.modes_of_operation_display);
+  //   printf("\tPosition Actual Value: %d\n", rx_pdo.position_actual_value);
+  //   printf("\tFollow Error Actual Value: %d\n", rx_pdo.follow_error_actual_value);
+  //   printf("\tTouch Probe Status: %d\n", rx_pdo.touch_probe_status);
+  //   printf("\tTouch probe pos1 neg value: %d\n", rx_pdo.touch_probe_pos1_neg_value);
+  //   printf("\tTouch probe pos1 pos value: %d\n", rx_pdo.touch_probe_pos1_pos_value);
+  //   printf("\tTouch probe pos2 pos value: %d\n", rx_pdo.touch_probe_pos2_pos_value);
+  //   printf("\tTouch probe pos2 neg value: %d\n", rx_pdo.touch_probe_pos2_neg_value);
+  //   printf("\tDigital Inputs: %.32x\n", rx_pdo.digital_inputs);
+  // }
+
 };
 
-} } } }// namespace
+} } } } // namespace
 #endif

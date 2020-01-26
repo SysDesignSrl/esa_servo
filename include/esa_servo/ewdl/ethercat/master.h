@@ -21,7 +21,8 @@
 
 namespace esa { namespace ewdl { namespace ethercat {
 
-int slave_setup(uint16 slave) {
+int slave_setup(uint16 slave)
+{
   int wkc = 0;
 
   //
@@ -39,43 +40,84 @@ int slave_setup(uint16 slave) {
   return wkc;
 }
 
-
-class Master {
+class Master
+{
   std::string ifname;
+  std::vector<std::string> slaves;
 
   int wkc = 0;
   int ec_state = EC_STATE_NONE;
 
-public:
-  const double pos_step_factor = 10000.0;
-  const double vel_step_factor = 100000.0;
 
-  std::vector<std::string> slaves;
+  bool network_configuration()
+  {
+    for (int i=0; i < slaves.size(); i++)
+    {
+      if (strcmp(ec_slave[i+1].name, slaves[i].c_str()))
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void print_ec_state(int ec_state)
+  {
+    switch (ec_state)
+    {
+      case EC_STATE_NONE:
+        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_NONE");
+        break;
+      case EC_STATE_BOOT:
+        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_BOOT");
+        break;
+      case EC_STATE_INIT:
+        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_INIT");
+        break;
+      case EC_STATE_PRE_OP:
+        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_PRE_OP");
+        break;
+      case EC_STATE_SAFE_OP:
+        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_SAFE_OP");
+        break;
+      case EC_STATE_OPERATIONAL:
+        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_OPERATIONAL");
+        break;
+      //case EC_STATE_ACK:
+      //  ROS_INFO("%s: ESM: %s", ec_slave[slave].name, "EC_STATE_ACK");
+      //  break;
+      case EC_STATE_PRE_OP + EC_STATE_ERROR:
+        ROS_ERROR("%s: %s + %s", ec_slave[EWDL_Z1].name, "EC_STATE_ERROR", "EC_STATE_PRE_OP");
+        break;
+      case EC_STATE_SAFE_OP + EC_STATE_ERROR:
+        ROS_ERROR("%s: %s + %s", ec_slave[EWDL_Z1].name, "EC_STATE_ERROR", "EC_STATE_SAFE_OP");
+        break;
+      case EC_STATE_OPERATIONAL + EC_STATE_ERROR:
+        ROS_ERROR("%s: %s + %s", ec_slave[EWDL_Z1].name, "EC_STATE_ERROR", "EC_STATE_OPERATIONAL");
+        break;
+    }
+  }
+
+public:
 
   esa::ewdl::ethercat::pdo::RxPDO0 rx_pdo;
   esa::ewdl::ethercat::pdo::TxPDO0 tx_pdo;
 
+  Master() { }
 
-  Master(std::string ifname) : ifname(ifname) { }
-
-
-  bool network_configuration() {
-    for (int i=0; i < slaves.size(); i++)
-      if (strcmp(ec_slave[i+1].name, slaves[i].c_str()))
-        return false;
-    return true;
-  }
+  Master(const std::string &ifname, const std::vector<std::string> &slaves) : ifname(ifname), slaves(slaves) { }
 
 
-  bool init() {
-
-    if (!ec_init(ifname.c_str()) > 0) {
+  bool init()
+  {
+    if (!ec_init(ifname.c_str()) > 0)
+    {
       ROS_ERROR("Coludn't initialize SOEM socket: %s", ifname.c_str());
       return false;
     }
 
-
-    if (!ec_config_init(FALSE) > 0) {
+    if (!ec_config_init(FALSE) > 0)
+    {
       ROS_ERROR("Coludn't find and configure any slave.");
       return false;
     }
@@ -113,7 +155,8 @@ public:
       ec_slave[EWDL_Z1].SMtype[3]);
 
     // network configuration
-    if (!network_configuration()) {
+    if (!network_configuration())
+    {
       ROS_ERROR("Mismatch of network units!");
       return false;
     }
@@ -129,7 +172,8 @@ public:
 
     uint8 IOmap[128];
     int usedmem = ec_config_map(&IOmap);
-    if (usedmem <= sizeof(IOmap)) {
+    if (usedmem <= sizeof(IOmap))
+    {
       ROS_DEBUG("IOmap size: %d", usedmem);
     }
 
@@ -229,9 +273,8 @@ public:
   }
 
 
-  bool start() {
-
-    // Safe-Operational -> Operational
+  bool start()
+  {
     rx_pdo.control_word = 0x0006;
     rx_pdo.mode_of_operation = 1;
     rx_pdo.target_position = 0;
@@ -240,19 +283,23 @@ public:
 
     update();
 
+    // Safe-Operational -> Operational
     ec_slave[EWDL_Z1].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
     ec_writestate(EWDL_Z1);
     ec_state = ec_statecheck(0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE);
     print_ec_state(ec_state);
 
     if (ec_state != EC_STATE_OPERATIONAL)
+    {
       return false;
+    }
 
     return true;
   }
 
 
-  int update() {
+  int update()
+  {
     int wkc = 0;
 
     rx_pdo >> ec_slave[EWDL_Z1].outputs;
@@ -264,48 +311,12 @@ public:
   }
 
 
-  void close() { ec_close(); }
-
-
-  void print_ec_state(int ec_state) {
-
-    switch (ec_state)
-    {
-      case EC_STATE_NONE:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_NONE");
-        break;
-      case EC_STATE_BOOT:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_BOOT");
-        break;
-      case EC_STATE_INIT:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_INIT");
-        break;
-      case EC_STATE_PRE_OP:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_PRE_OP");
-        break;
-      case EC_STATE_SAFE_OP:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_SAFE_OP");
-        break;
-      case EC_STATE_OPERATIONAL:
-        ROS_INFO("%s: %s", ec_slave[EWDL_Z1].name, "EC_STATE_OPERATIONAL");
-        break;
-      //case EC_STATE_ACK:
-      //  ROS_INFO("%s: ESM: %s", ec_slave[slave].name, "EC_STATE_ACK");
-      //  break;
-
-      case EC_STATE_PRE_OP + EC_STATE_ERROR:
-        ROS_ERROR("%s: %s + %s", ec_slave[EWDL_Z1].name, "EC_STATE_ERROR", "EC_STATE_PRE_OP");
-        break;
-      case EC_STATE_SAFE_OP + EC_STATE_ERROR:
-        ROS_ERROR("%s: %s + %s", ec_slave[EWDL_Z1].name, "EC_STATE_ERROR", "EC_STATE_SAFE_OP");
-        break;
-      case EC_STATE_OPERATIONAL + EC_STATE_ERROR:
-        ROS_ERROR("%s: %s + %s", ec_slave[EWDL_Z1].name, "EC_STATE_ERROR", "EC_STATE_OPERATIONAL");
-        break;
-    }
+  void close()
+  {
+    ec_close();
   }
 
 };
 
-} } }
+} } }  // namespace
 #endif
