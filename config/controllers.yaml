@@ -6,7 +6,7 @@ rail:
     state:
       type: joint_state_controller/JointStateController
       publish_rate: 50
-    velocity:
+    position:
       rail_joint:
         type: velocity_controllers/JointPositionController
         joint: "rail_joint"

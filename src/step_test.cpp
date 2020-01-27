@@ -7,8 +7,8 @@
 #include <std_msgs/Float64.h>
 
 
-int main(int argc, char* argv[]) {
-
+int main(int argc, char* argv[])
+{
   ros::init(argc, argv, "step_test");
 
   // Node
@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
   double max_value = node.param<double>("max_value", 0.0);
 
   // Published Topics
-  auto command_pub = node.advertise<std_msgs::Float64>("/rail/controller/velocity/rail_joint/command", 10);
+  auto command_pub = node.advertise<std_msgs::Float64>("/rail/controller/position/rail_joint/command", 10);
 
 
   int count = 0;
@@ -29,7 +29,8 @@ int main(int argc, char* argv[]) {
 
   // Loop
   ros::Rate rate(freq);
-  while (ros::ok()) {
+  while (ros::ok())
+  {
     ros::spinOnce();
     ros::Time now = ros::Time::now();
 
