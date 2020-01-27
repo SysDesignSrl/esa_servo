@@ -91,6 +91,7 @@ public:
   {
     if (!init_ethercat())
     {
+      ROS_FATAL("Failed to initialize EtherCAT communication!");
       return false;
     }
 
@@ -108,13 +109,13 @@ public:
 
     int n_joints = joint_names.size();
 
-    joint_pos.resize(n_joints, 0);
-    joint_vel.resize(n_joints, 0);
-    joint_eff.resize(n_joints, 0);
+    joint_pos.resize(n_joints, 0.0);
+    joint_vel.resize(n_joints, 0.0);
+    joint_eff.resize(n_joints, 0.0);
 
-    joint_pos_cmd.resize(n_joints, 0);
-    joint_vel_cmd.resize(n_joints, 0);
-    joint_eff_cmd.resize(n_joints, 0);
+    joint_pos_cmd.resize(n_joints, 0.0);
+    joint_vel_cmd.resize(n_joints, 0.0);
+    joint_eff_cmd.resize(n_joints, 0.0);
 
     for (int i=0; i < n_joints; i++)
     {
@@ -131,6 +132,9 @@ public:
     registerInterface(&joint_state_interface);
     registerInterface(&pos_joint_interface);
     registerInterface(&vel_joint_interface);
+
+    ROS_INFO("Hardware Interface initialized correctly.");
+    return true;
   }
 
 
@@ -150,14 +154,15 @@ public:
   void read()
   {
     joint_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
+    joint_vel[0] = ec_master.tx_pdo.position_actual_value / VELOCITY_STEP_FACTOR;
   }
 
 
   void write()
   {
     ec_master.rx_pdo.control_word = 0x000F;
-    ec_master.rx_pdo.mode_of_operation = 1;
-    ec_master.rx_pdo.target_position = joint_pos_cmd[0] * POSITION_STEP_FACTOR;
+    ec_master.rx_pdo.mode_of_operation = 9;
+    ec_master.rx_pdo.target_velocity = joint_vel_cmd[0] * VELOCITY_STEP_FACTOR;
     ec_master.rx_pdo.touch_probe_function = 0;
     ec_master.rx_pdo.physical_outputs = 0x0000;
 

@@ -11,8 +11,8 @@
   </node>
 
   <!-- -->
-  <!--node name="controller_loader" pkg="controller_manager" type="spawner" output="screen"
+  <node ns="ewdl_hardware_interface" name="controller_loader" pkg="controller_manager" type="spawner" output="screen"
     args="/EWDL/controller/state
-          /EWDL/controller/position/rail_joint"/-->
+          /EWDL/controller/velocity/rail_joint"/>
 
 </launch>

@@ -4,6 +4,7 @@
 // roscpp
 #include <ros/ros.h>
 #include <ros/console.h>
+#include <ros/callback_queue.h>
 // controller_manager
 #include <controller_manager/controller_manager.h>
 // esa_servo
@@ -17,6 +18,9 @@ int main (int argc, char* argv[])
 
   ros::NodeHandle node("~");
 
+  ros::CallbackQueue callback_queue;
+  node.setCallbackQueue(&callback_queue);
+
 
   double loop_hz;
   if (!node.getParam("/EWDL/hardware_interface/loop_hz", loop_hz))
@@ -26,7 +30,7 @@ int main (int argc, char* argv[])
   }
 
 
-  ros::AsyncSpinner spinner(0);
+  ros::AsyncSpinner spinner(0, &callback_queue);
   spinner.start();
 
 
@@ -35,6 +39,7 @@ int main (int argc, char* argv[])
 
   if (!ewdl_hw.init())
   {
+    ROS_FATAL("Failed to initialize hardware interface!");
     ewdl_hw.close();
     return -1;
   }
@@ -45,6 +50,7 @@ int main (int argc, char* argv[])
 
   if (!ewdl_hw.start())
   {
+    ROS_FATAL("Failed to start hardware interface!");
     ewdl_hw.close();
     return -1;
   }
@@ -57,7 +63,7 @@ int main (int argc, char* argv[])
     rate.sleep();
     const ros::Time time = ros::Time::now();
     const ros::Duration period = time - prev_time;
-    //ROS_DEBUG_THROTTLE(0, "Period: %fs", period.toSec());
+    ROS_DEBUG_THROTTLE(1.0, "Period: %fs", period.toSec());
 
     ewdl_hw.read();
     controller_manager.update(time, period);
