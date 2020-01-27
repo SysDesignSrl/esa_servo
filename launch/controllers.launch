@@ -6,13 +6,13 @@
   <rosparam command="load" file="$(find esa_servo)/config/joint_limits.yaml" />
 
   <!-- -->
-  <node name="ewdl_hardware_interface" launch-prefix="ethercat_grant" pkg="esa_servo" type="ewdl_hardware_interface" output="screen">
+  <node name="ewdl_driver" launch-prefix="ethercat_grant" pkg="esa_servo" type="ewdl_hardware_interface" output="screen">
     <rosparam ns="ethercat" command="load" file="$(find esa_servo)/config/ethercat.yaml" />
   </node>
 
   <!-- -->
-  <node ns="ewdl_hardware_interface" name="controller_loader" pkg="controller_manager" type="spawner" output="screen"
-    args="/EWDL/controller/state
-          /EWDL/controller/velocity/rail_controller" />
+  <node ns="ewdl_driver" name="controller_loader" pkg="controller_manager" type="spawner" output="screen"
+    args="/rail/controller/state
+          /rail/controller/velocity/rail_joint" />
 
 </launch>

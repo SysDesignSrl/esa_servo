@@ -209,11 +209,16 @@ public:
   {
     a_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
     a_vel[0] = ec_master.tx_pdo.position_actual_value / VELOCITY_STEP_FACTOR;
+
+    act_to_jnt_state_interface.propagate();
   }
 
 
   void write()
   {
+    jnt_to_act_pos_interface.propagate();
+    jnt_to_act_vel_interface.propagate();
+
     ec_master.rx_pdo.control_word = 0x000F;
     ec_master.rx_pdo.mode_of_operation = 9;
     ec_master.rx_pdo.target_velocity = a_vel_cmd[0] * VELOCITY_STEP_FACTOR;

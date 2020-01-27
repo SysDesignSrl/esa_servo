@@ -1,13 +1,13 @@
 #################
 ## Controllers ##
 #################
-EWDL:
+rail:
   controller:
     state:
       type: joint_state_controller/JointStateController
       publish_rate: 50
     velocity:
-      rail_controller:
+      rail_joint:
         type: velocity_controllers/JointPositionController
         joint: "rail_joint"
-        pid: { p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0 }
+        pid: { p: 2.0, i: 0.0, d: 0.0, i_clamp: 0.0 }
