@@ -12,8 +12,11 @@
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/robot_hw.h>
-// SOEM
-#include "ethercat.h"
+// transmission interface
+#include <transmission_interface/transmission_interface_loader.h>
+#include <transmission_interface/transmission_interface.h>
+#include <transmission_interface/transmission.h>
+#include <transmission_interface/simple_transmission.h>
 // esa_servo
 #include "esa_servo/ewdl/ethercat/master.h"
 
@@ -26,29 +29,47 @@ static const double VELOCITY_STEP_FACTOR = 10000.0;
 
 class EWDL_HardwareInterface : public hardware_interface::RobotHW {
 protected:
+  esa::ewdl::ethercat::Master ec_master;
+
   ros::NodeHandle node;
 
   double loop_hz;
   std::vector<std::string> joint_names;
 
-  hardware_interface::JointStateInterface joint_state_interface;
-  hardware_interface::PositionJointInterface pos_joint_interface;
-  hardware_interface::VelocityJointInterface vel_joint_interface;
+  transmission_interface::SimpleTransmission rail_trans;
 
-  std::vector<double> joint_pos, joint_pos_cmd;
-  std::vector<double> joint_vel, joint_vel_cmd;
-  std::vector<double> joint_eff, joint_eff_cmd;
+
+  transmission_interface::ActuatorToJointStateInterface act_to_jnt_state_interface;
+  transmission_interface::JointToActuatorPositionInterface jnt_to_act_pos_interface;
+  transmission_interface::JointToActuatorVelocityInterface jnt_to_act_vel_interface;
+
+  hardware_interface::JointStateInterface jnt_state_interface;
+  hardware_interface::PositionJointInterface jnt_pos_interface;
+  hardware_interface::VelocityJointInterface jnt_vel_interface;
+
+  //
+  std::vector<double> a_pos, a_pos_cmd;
+  std::vector<double> a_vel, a_vel_cmd;
+  std::vector<double> a_eff, a_eff_cmd;
+
+  std::vector<transmission_interface::ActuatorData> a_data, a_cmd_data;
+
+  //
+  std::vector<double> j_pos, j_pos_cmd;
+  std::vector<double> j_vel, j_vel_cmd;
+  std::vector<double> j_eff, j_eff_cmd;
+
+  std::vector<transmission_interface::JointData> j_data, j_cmd_data;
+
 
   std::vector<double> joint_lower_limits;
   std::vector<double> joint_upper_limits;
 
 
-  esa::ewdl::ethercat::Master ec_master;
-
 public:
 
 
-  EWDL_HardwareInterface(ros::NodeHandle &node) : node(node) { }
+  EWDL_HardwareInterface(ros::NodeHandle &node) : node(node), rail_trans(3.0/0.200) { }
 
 
   bool init_ethercat()
@@ -107,31 +128,64 @@ public:
       return false;
     }
 
+
     int n_joints = joint_names.size();
 
-    joint_pos.resize(n_joints, 0.0);
-    joint_vel.resize(n_joints, 0.0);
-    joint_eff.resize(n_joints, 0.0);
+    a_pos.resize(n_joints, 0.0); a_pos_cmd.resize(n_joints, 0.0);
+    a_vel.resize(n_joints, 0.0); a_vel_cmd.resize(n_joints, 0.0);
+    a_eff.resize(n_joints, 0.0); a_eff_cmd.resize(n_joints, 0.0);
 
-    joint_pos_cmd.resize(n_joints, 0.0);
-    joint_vel_cmd.resize(n_joints, 0.0);
-    joint_eff_cmd.resize(n_joints, 0.0);
+    a_data.resize(n_joints);   a_cmd_data.resize(n_joints);
+
+    j_pos.resize(n_joints, 0.0); j_pos_cmd.resize(n_joints, 0.0);
+    j_vel.resize(n_joints, 0.0); j_vel_cmd.resize(n_joints, 0.0);
+    j_eff.resize(n_joints, 0.0); j_eff_cmd.resize(n_joints, 0.0);
+
+    j_data.resize(n_joints);   j_cmd_data.resize(n_joints);
+
 
     for (int i=0; i < n_joints; i++)
     {
-      hardware_interface::JointStateHandle joint_state_handle(joint_names[i], &joint_pos[i], &joint_vel[i], &joint_eff[i]);
-      joint_state_interface.registerHandle(joint_state_handle);
+      a_data[i].position.push_back(&a_pos[i]);
+      a_data[i].velocity.push_back(&a_vel[i]);
+      a_data[i].effort.push_back(&a_eff[i]);
 
-      hardware_interface::JointHandle pos_joint_handle(joint_state_handle, &joint_pos_cmd[i]);
-      pos_joint_interface.registerHandle(pos_joint_handle);
+      a_cmd_data[i].position.push_back(&a_pos_cmd[i]);
+      a_cmd_data[i].velocity.push_back(&a_vel_cmd[i]);
+      a_cmd_data[i].effort.push_back(&a_eff_cmd[i]);
 
-      hardware_interface::JointHandle vel_joint_handle(joint_state_handle, &joint_vel_cmd[i]);
-      vel_joint_interface.registerHandle(vel_joint_handle);
+      j_data[i].position.push_back(&j_pos[i]);
+      j_data[i].velocity.push_back(&j_vel[i]);
+      j_data[i].effort.push_back(&j_eff[i]);
+
+      j_cmd_data[i].position.push_back(&j_pos_cmd[i]);
+      j_cmd_data[i].velocity.push_back(&j_vel_cmd[i]);
+      j_cmd_data[i].effort.push_back(&j_eff_cmd[i]);
+
+      // Transmission Interfaces
+      transmission_interface::ActuatorToJointStateHandle act_to_jnt_state_handle("rail_trans", &rail_trans, a_data[i], j_data[i]);
+      act_to_jnt_state_interface.registerHandle(act_to_jnt_state_handle);
+
+      transmission_interface::JointToActuatorPositionHandle jnt_to_act_pos_handle("rail_trans", &rail_trans, a_cmd_data[i], j_cmd_data[i]);
+      jnt_to_act_pos_interface.registerHandle(jnt_to_act_pos_handle);
+
+      transmission_interface::JointToActuatorVelocityHandle jnt_to_act_vel_handle("rail_trans", &rail_trans, a_cmd_data[i], j_cmd_data[i]);
+      jnt_to_act_vel_interface.registerHandle(jnt_to_act_vel_handle);
+
+      // Hardware Interfaces
+      hardware_interface::JointStateHandle jnt_state_handle(joint_names[i], &j_pos[i], &j_vel[i], &j_eff[i]);
+      jnt_state_interface.registerHandle(jnt_state_handle);
+
+      hardware_interface::JointHandle jnt_pos_handle(jnt_state_handle, &j_pos_cmd[i]);
+      jnt_pos_interface.registerHandle(jnt_pos_handle);
+
+      hardware_interface::JointHandle jnt_vel_handle(jnt_state_handle, &j_vel_cmd[i]);
+      jnt_vel_interface.registerHandle(jnt_vel_handle);
     }
 
-    registerInterface(&joint_state_interface);
-    registerInterface(&pos_joint_interface);
-    registerInterface(&vel_joint_interface);
+    registerInterface(&jnt_state_interface);
+    registerInterface(&jnt_pos_interface);
+    registerInterface(&jnt_vel_interface);
 
     ROS_INFO("Hardware Interface initialized correctly.");
     return true;
@@ -153,8 +207,8 @@ public:
 
   void read()
   {
-    joint_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
-    joint_vel[0] = ec_master.tx_pdo.position_actual_value / VELOCITY_STEP_FACTOR;
+    a_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
+    a_vel[0] = ec_master.tx_pdo.position_actual_value / VELOCITY_STEP_FACTOR;
   }
 
 
@@ -162,7 +216,7 @@ public:
   {
     ec_master.rx_pdo.control_word = 0x000F;
     ec_master.rx_pdo.mode_of_operation = 9;
-    ec_master.rx_pdo.target_velocity = joint_vel_cmd[0] * VELOCITY_STEP_FACTOR;
+    ec_master.rx_pdo.target_velocity = a_vel_cmd[0] * VELOCITY_STEP_FACTOR;
     ec_master.rx_pdo.touch_probe_function = 0;
     ec_master.rx_pdo.physical_outputs = 0x0000;
 

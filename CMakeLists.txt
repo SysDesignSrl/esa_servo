@@ -9,8 +9,11 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  std_msgs
+  std_srvs
   controller_manager
   hardware_interface
+  transmission_interface
   soem
 )
 
@@ -107,11 +110,8 @@ find_package(Boost REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES ethercat-driver
-  CATKIN_DEPENDS
-    roscpp
-    controller_manager
-    hardware_interface
-    soem
+  CATKIN_DEPENDS roscpp std_msgs  std_srvs controller_manager hardware_interface
+    transmission_interface soem
   DEPENDS Boost
 )
 
@@ -141,6 +141,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(ewdl_hardware_interface src/ewdl_hardware_interface.cpp)
+add_executable(step_test src/step_test.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -154,6 +155,7 @@ add_executable(ewdl_hardware_interface src/ewdl_hardware_interface.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(ewdl_hardware_interface ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(step_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 #############
 ## Install ##

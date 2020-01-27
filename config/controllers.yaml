@@ -7,7 +7,7 @@ EWDL:
       type: joint_state_controller/JointStateController
       publish_rate: 50
     velocity:
-      rail_joint:
+      rail_controller:
         type: velocity_controllers/JointPositionController
         joint: "rail_joint"
         pid: { p: 1.0, i: 0.0, d: 0.0, i_clamp: 0.0 }

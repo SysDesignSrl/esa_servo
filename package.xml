@@ -14,8 +14,11 @@
   <buildtool_depend>catkin</buildtool_depend>
   <!-- Catkin Dependencies -->
   <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>controller_manager</depend>
   <depend>hardware_interface</depend>
+  <depend>transmission_interface</depend>
   <depend>soem</depend>
   <!-- System Dependencies -->
   <depend>boost</depend>
