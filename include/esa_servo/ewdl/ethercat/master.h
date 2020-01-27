@@ -13,6 +13,7 @@
 // SOEM
 #include "ethercat.h"
 // esa_servo
+#include "esa_servo/ewdl/ethercat/registry.h"
 #include "esa_servo/ewdl/ethercat/pdo.h"
 #include "esa_servo/ewdl/ethercat/common.h"
 
@@ -20,6 +21,32 @@
 
 
 namespace esa { namespace ewdl { namespace ethercat {
+
+
+template<class T>
+int writeSDO(const uint16 slave, const uint16 index, const uint8 sub_index, const T value)
+{
+  int wkc = 0;
+
+  T data = value; int size_of_data = sizeof(data);
+  wkc += ec_SDOwrite(slave, index, sub_index, FALSE, size_of_data, &data, EC_TIMEOUTRXM);
+
+  return wkc;
+}
+
+
+template<class T>
+int readSDO(const uint16 slave, const uint16 index, const uint8 sub_index, T &value)
+{
+  int wkc = 0;
+
+  T data = value; int size_of_data = sizeof(data);
+  wkc += ec_SDOread(slave, index, sub_index, FALSE, &size_of_data, &data, EC_TIMEOUTRXM);
+
+  value = data;
+
+  return wkc;
+}
 
 
 int slave_setup(uint16 slave)
@@ -42,8 +69,8 @@ int slave_setup(uint16 slave)
 }
 
 
-class Master
-{
+class Master {
+private:
   std::string ifname;
   std::vector<std::string> slaves;
 
@@ -64,7 +91,7 @@ class Master
   }
 
 
-  void print_ec_state(int slave, int ec_state)
+  void print_ec_state(uint16 slave, int ec_state)
   {
     switch (ec_state)
     {
@@ -203,11 +230,12 @@ public:
 
 
     // Enable Cyclic Synchronous Velocity Mode
-    int8 sdo_6060 = 0x09;
-    wkc += ec_SDOwrite(EWDL_Z1, 0x6060, 0x00, FALSE, sizeof(sdo_6060), &sdo_6060, EC_TIMEOUTRXM);
-    int8 sdo_6061 = 0x00; int size_6061 = sizeof(sdo_6061);
-    wkc += ec_SDOread(EWDL_Z1, 0x6061, 0x00, FALSE, &size_6061, &sdo_6061, EC_TIMEOUTRXM);
-    ROS_DEBUG("WKC: %d SDO 0x6061 Modes of Opration: 0x%.2x", wkc, sdo_6061);
+    int8 mode_of_operation = 9;
+    wkc += writeSDO<int8>(1, MODE_OF_OPERATION_IDX, 0x00, mode_of_operation);
+
+    int8 mode_of_operation_display;
+    wkc += readSDO<int8>(1, MODE_OF_OPERATION_DISPLAY_IDX, 0x00, mode_of_operation_display);
+    ROS_DEBUG("WKC: %d SDO 0x%.4x Modes of Operation: 0x%.2x", wkc, MODE_OF_OPERATION_IDX, mode_of_operation_display);
 
 
     // // Set Running Parameters
@@ -239,30 +267,40 @@ public:
     //wkc += ec_SDOwrite(EWDL_Z1, 0x2006, 0x00, FALSE, sizeof(sdo_2006), &sdo_2006, EC_TIMEOUTRXM);
 
 
-    // Start/Stopping Motion
-    uint16 sdo_6040 = 0x0080;
-    wkc += ec_SDOwrite(EWDL_Z1, 0x6040, 0x00, FALSE, sizeof(sdo_6040), &sdo_6040, EC_TIMEOUTRXM);
-    uint16 sdo_6041 = 0x0000; int size_6041 = sizeof(sdo_6041);
-    wkc += ec_SDOread(EWDL_Z1, 0x6041, 0x00, FALSE, &size_6041, &sdo_6041, EC_TIMEOUTRXM);
-    ROS_DEBUG("WKC: %d SDO 0x6041 Status Word: 0x%.4x", wkc, sdo_6041);
+    // Starting/Stopping Motion
+    uint16 control_word = 0x0080;
+    wkc += writeSDO<uint16>(1, CONTROL_WORD_IDX, 0x00, control_word);
 
-    sdo_6040 = 0x0006;
-    wkc += ec_SDOwrite(EWDL_Z1, 0x6040, 0x00, FALSE, sizeof(sdo_6040), &sdo_6040, EC_TIMEOUTRXM);
-    sdo_6041 = 0x0000; size_6041 = sizeof(sdo_6041);
-    wkc += ec_SDOread(EWDL_Z1, 0x6041, 0x00, FALSE, &size_6041, &sdo_6041, EC_TIMEOUTRXM);
-    ROS_DEBUG("WKC: %d SDO 0x6041 Status Word: 0x%.4x", wkc, sdo_6041);
+    uint16 status_word;
+    wkc += readSDO<uint16>(1, STATUS_WORD_IDX, 0x00, status_word);
+    ROS_DEBUG("WKC: %d SDO 0x%.4x Status Word: 0x%.4x", wkc, STATUS_WORD_IDX, status_word);
+
+
+    control_word = 0x0006;
+    wkc += writeSDO<uint16>(1, CONTROL_WORD_IDX, 0x00, control_word);
+
+    wkc += readSDO<uint16>(1, STATUS_WORD_IDX, 0x00, status_word);
+    ROS_DEBUG("WKC: %d SDO 0x%.4x Status Word: 0x%.4x", wkc, STATUS_WORD_IDX, status_word);
+
 
     // Error Code
-    uint16 sdo_603F = 0x0000; int size_603F = sizeof(sdo_603F);
-    wkc += ec_SDOread(EWDL_Z1, 0x603F, 0x00, FALSE, &size_603F, &sdo_603F, EC_TIMEOUTRXM);
-    ROS_DEBUG("WKC: %d SDO 0x603F Error Code: 0x%.4x", wkc, sdo_603F);
+    uint16 error_code;
+    wkc += readSDO<uint16>(1, ERROR_CODE_IDX, 0x00, error_code);
+    ROS_DEBUG("WKC: %d SDO 0x%.4x Error Code: 0x%.4x", wkc, ERROR_CODE_IDX, error_code);
+
 
     // Status Code
-    uint32 sdo_200B = 0x0000; int size_200B = sizeof(sdo_200B);
-    wkc += ec_SDOread(EWDL_Z1, 0x200B, 0x00, FALSE, &size_200B, &sdo_200B, EC_TIMEOUTRXM);
-    ROS_DEBUG("WKC: %d SDO 0x200B Status Code: 0x%.4x", wkc, sdo_200B);
+    uint32 status_code;
+    wkc += readSDO<uint32>(1, STATUS_CODE_IDX, 0x00, status_code);
+    ROS_DEBUG("WKC: %d SDO 0x%.4x Status Code: 0x%.4x", wkc, STATUS_CODE_IDX, status_code);
 
     return true;
+  }
+
+
+  bool start_homing()
+  {
+
   }
 
 
