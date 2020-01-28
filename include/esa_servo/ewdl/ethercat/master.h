@@ -1,12 +1,8 @@
 #ifndef ESA_EWDL_ETHERCAT_MASTER_H
 #define ESA_EWDL_ETHERCAT_MASTER_H
 // STL
-#include <cstdio>
-#include <cstring>
 #include <string>
 #include <vector>
-#include <chrono>
-#include <thread>
 // roscpp
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -23,51 +19,13 @@
 namespace esa { namespace ewdl { namespace ethercat {
 
 
-template<class T>
-int writeSDO(const uint16 slave, const uint16 index, const uint8 sub_index, const T value)
-{
-  int wkc = 0;
-
-  T data = value; int size_of_data = sizeof(data);
-  wkc += ec_SDOwrite(slave, index, sub_index, FALSE, size_of_data, &data, EC_TIMEOUTRXM);
-
-  return wkc;
-}
-
-
-template<class T>
-int writeSDO(const uint16 slave, const uint16 index, const uint8 sub_index, T *value)
-{
-  int wkc = 0;
-
-  T *data = value; int size_of_data = sizeof(data);
-  wkc += ec_SDOwrite(slave, index, sub_index, TRUE, size_of_data, data, EC_TIMEOUTRXM);
-
-  return wkc;
-}
-
-
-template<class T>
-int readSDO(const uint16 slave, const uint16 index, const uint8 sub_index, T &value)
-{
-  int wkc = 0;
-
-  T data = value; int size_of_data = sizeof(data);
-  wkc += ec_SDOread(slave, index, sub_index, FALSE, &size_of_data, &data, EC_TIMEOUTRXM);
-
-  value = data;
-
-  return wkc;
-}
-
-
-int slave_setup(uint16 slave)
+inline int slave_setup(uint16 slave)
 {
   int wkc = 0;
 
   // PDO mapping
-  uint16 sdo_1c12[] = { 0x0001, 0x1601 };   // RxPDO1
-  uint16 sdo_1c13[] = { 0x0001, 0x1a01 };   // TxPDO1
+  uint16 sdo_1c12[] = { 0x0001, 0x1601 };     // RxPDO1
+  uint16 sdo_1c13[] = { 0x0001, 0x1a01 };     // TxPDO1
   wkc += writeSDO<uint16>(slave, 0x1c12, 0x00, sdo_1c12);
   wkc += writeSDO<uint16>(slave, 0x1c13, 0x00, sdo_1c13);
 
@@ -83,16 +41,12 @@ int slave_setup(uint16 slave)
 
 class Master {
 private:
+
   std::string ifname;
   std::vector<std::string> slaves;
 
   int wkc = 0;
   int ec_state = EC_STATE_NONE;
-
-
-  uint16 control_word;
-  uint16 status_word;
-
 
 
   bool network_configuration()
@@ -105,44 +59,6 @@ private:
       }
     }
     return true;
-  }
-
-
-  void print_ec_state(uint16 slave, int ec_state)
-  {
-    switch (ec_state)
-    {
-      case EC_STATE_NONE:
-        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_NONE");
-        break;
-      case EC_STATE_BOOT:
-        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_BOOT");
-        break;
-      case EC_STATE_INIT:
-        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_INIT");
-        break;
-      case EC_STATE_PRE_OP:
-        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_PRE_OP");
-        break;
-      case EC_STATE_SAFE_OP:
-        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_SAFE_OP");
-        break;
-      case EC_STATE_OPERATIONAL:
-        ROS_INFO("%s: %s", ec_slave[slave].name, "EC_STATE_OPERATIONAL");
-        break;
-      //case EC_STATE_ACK:
-      //  ROS_INFO("%s: ESM: %s", ec_slave[slave].name, "EC_STATE_ACK");
-      //  break;
-      case EC_STATE_PRE_OP + EC_STATE_ERROR:
-        ROS_ERROR("%s: %s + %s", ec_slave[slave].name, "EC_STATE_ERROR", "EC_STATE_PRE_OP");
-        break;
-      case EC_STATE_SAFE_OP + EC_STATE_ERROR:
-        ROS_ERROR("%s: %s + %s", ec_slave[slave].name, "EC_STATE_ERROR", "EC_STATE_SAFE_OP");
-        break;
-      case EC_STATE_OPERATIONAL + EC_STATE_ERROR:
-        ROS_ERROR("%s: %s + %s", ec_slave[slave].name, "EC_STATE_ERROR", "EC_STATE_OPERATIONAL");
-        break;
-    }
   }
 
 
@@ -202,7 +118,7 @@ public:
 
 
     ec_state = ec_statecheck(0, EC_STATE_PRE_OP, EC_TIMEOUTSTATE);
-    print_ec_state(0, ec_state);
+    print_ec_state(0);
 
     // network configuration
     if (!network_configuration())
@@ -243,7 +159,7 @@ public:
     }
 
     ec_state = ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE);
-    print_ec_state(0, ec_state);
+    print_ec_state(0);
 
 
     // // Set Running Parameters
@@ -312,6 +228,7 @@ public:
     control_word = 0x0006;
     wkc += writeSDO<uint16>(1, CONTROL_WORD_IDX, 0x00, control_word);
 
+    status_word;
     wkc += readSDO<uint16>(1, STATUS_WORD_IDX, 0x00, status_word);
     ROS_DEBUG("WKC: %d SDO 0x%.4x Status Word: 0x%.4x", wkc, STATUS_WORD_IDX, status_word);
 
@@ -320,7 +237,6 @@ public:
     uint16 error_code;
     wkc += readSDO<uint16>(1, ERROR_CODE_IDX, 0x00, error_code);
     ROS_DEBUG("WKC: %d SDO 0x%.4x Error Code: 0x%.4x", wkc, ERROR_CODE_IDX, error_code);
-
 
     // Status Code
     uint32 status_code;

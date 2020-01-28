@@ -1,91 +1,165 @@
-// STL
-#include <string>
-#include <vector>
-// roscpp
-#include <ros/ros.h>
-#include <ros/console.h>
-#include <ros/callback_queue.h>
-// std_srvs
-#include <std_srvs/Trigger.h>
-// controller_manager
-#include <controller_manager/controller_manager.h>
-// esa_servo
-#include "esa_servo/ewdl/ethercat/master.h"
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
 
-int main (int argc, char* argv[])
+bool esa::ewdl::EWDL_HardwareInterface::run()
 {
-  ros::init(argc, argv, "ewdl_hardware_interface");
-
-  ros::NodeHandle node("~");
-
-  ros::CallbackQueue callback_queue;
-  node.setCallbackQueue(&callback_queue);
-
-
-  double loop_hz;
-  if (!node.getParam("/EWDL/hardware_interface/loop_hz", loop_hz))
+  if (!ec_master.run())
   {
-    ROS_FATAL("Parameter 'loop_hz' not defined.");
-    return -1;
+    return false;
   }
 
+  return true;
+}
 
-  ros::AsyncSpinner spinner(0, &callback_queue);
-  spinner.start();
 
-
-  // Hardware Interface
-  esa::ewdl::EWDL_HardwareInterface ewdl_hw(node);
-
-  if (!ewdl_hw.init())
+bool esa::ewdl::EWDL_HardwareInterface::run(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (run())
   {
-    ROS_FATAL("Failed to initialize Hardware Interface!");
-    ewdl_hw.close();
-    return -1;
+    res.success = true;
+    res.message = "Hardware Interface running.";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Failed to run Hardware Interface.";
   }
 
-  // Advertised Services
-  auto run_srv = node.advertiseService("run", &esa::ewdl::EWDL_HardwareInterface::run, &ewdl_hw);
-
-  auto set_zero_position_srv = node.advertiseService("set_zero_position", &esa::ewdl::EWDL_HardwareInterface::set_zero_position, &ewdl_hw);
-
-  auto start_homing_srv = node.advertiseService("start_homing", &esa::ewdl::EWDL_HardwareInterface::start_homing, &ewdl_hw);
-  auto stop_homing_srv = node.advertiseService("stop_homing", &esa::ewdl::EWDL_HardwareInterface::stop_homing, &ewdl_hw);
-
-  auto start_motion_srv = node.advertiseService("start_motion", &esa::ewdl::EWDL_HardwareInterface::start_motion, &ewdl_hw);
-  auto stop_motion_srv = node.advertiseService("stop_motion", &esa::ewdl::EWDL_HardwareInterface::stop_motion, &ewdl_hw);
+  return true;
+}
 
 
-  // Controller Manager
-  controller_manager::ControllerManager controller_manager(&ewdl_hw, node);
-
-
-  // if (!ewdl_hw.run())
-  // {
-  //   ROS_FATAL("Failed to run Hardware Interface!");
-  //   ewdl_hw.close();
-  //   return -1;
-  // }
-
-
-  ros::Time prev_time = ros::Time::now();
-  ros::Rate rate(loop_hz);
-  while (ros::ok())
+bool esa::ewdl::EWDL_HardwareInterface::set_zero_position()
+{
+  if (ec_master.set_zero_position() > 0)
   {
-    rate.sleep();
-    const ros::Time time = ros::Time::now();
-    const ros::Duration period = time - prev_time;
-    ROS_DEBUG_THROTTLE(1.0, "Period: %fs", period.toSec());
+    ROS_INFO("Setted Zero Position.");
+    return true;
+  }
+  else
+  {
+    ROS_ERROR("Failed to set Zero Position.");
+    return false;
+  }
+}
 
-    ewdl_hw.read();
-    controller_manager.update(time, period);
-    ewdl_hw.write();
 
-    prev_time = time;
+bool esa::ewdl::EWDL_HardwareInterface::set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (set_zero_position())
+  {
+    res.success = true;
+    res.message = "Setted Zero Position.";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Failed to set Zero Position.";
   }
 
-  ewdl_hw.close();
-  return 0;
+  return true;
+}
+
+
+bool esa::ewdl::EWDL_HardwareInterface::start_homing()
+{
+  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
+  control_word = 0x001F;
+
+  return true;
+}
+
+
+bool esa::ewdl::EWDL_HardwareInterface::start_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (start_homing())
+  {
+    res.success = true;
+    res.message = "Homing preocedure started successfully.";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Failed to start Homing preocedure.";
+  }
+
+  return true;
+}
+
+
+bool esa::ewdl::EWDL_HardwareInterface::stop_homing()
+{
+  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
+  control_word = 0x000F;
+
+  return true;
+}
+
+
+bool esa::ewdl::EWDL_HardwareInterface::stop_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (stop_homing())
+  {
+    res.success = true;
+    res.message = "Homing preocedure stopped successfully.";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Failed to stop Homing preocedure.";
+  }
+
+  return true;
+}
+
+
+bool esa::ewdl::EWDL_HardwareInterface::start_motion()
+{
+  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
+  control_word = 0x000F;
+
+  return true;
+}
+
+
+bool esa::ewdl::EWDL_HardwareInterface::start_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (start_motion())
+  {
+    res.success = true;
+    res.message = "Motion Mode started successfully.";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Starting Motion Mode failed.";
+  }
+
+  return true;
+}
+
+
+bool esa::ewdl::EWDL_HardwareInterface::stop_motion()
+{
+  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
+  control_word = 0x010F;
+
+  return true;
+}
+
+
+bool esa::ewdl::EWDL_HardwareInterface::stop_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (stop_motion())
+  {
+    res.success = true;
+    res.message = "Motion stopped successfully.";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Sopping motion failed.";
+  }
+
+  return true;
 }

@@ -140,7 +140,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(ewdl_hardware_interface src/ewdl_hardware_interface.cpp)
+add_executable(ewdl_driver src/ewdl_driver.cpp src/ewdl_hardware_interface.cpp)
 add_executable(step_test src/step_test.cpp)
 
 ## Rename C++ executable without prefix
@@ -154,7 +154,7 @@ add_executable(step_test src/step_test.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(ewdl_hardware_interface ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(ewdl_driver ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(step_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 #############

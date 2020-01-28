@@ -20,6 +20,7 @@
 #include <transmission_interface/transmission.h>
 #include <transmission_interface/simple_transmission.h>
 // esa_servo
+#include "esa_servo/ewdl/ethercat/common.h"
 #include "esa_servo/ewdl/ethercat/master.h"
 
 
@@ -34,17 +35,7 @@ private:
   esa::ewdl::ethercat::Master ec_master;
 
   uint16 control_word;
-
-  enum mode_of_operation_t : int8
-  {
-    Q_PROGRAM = -1,                    // Q Program Mode (ESA specific)
-    PROFILE_POSITION = 1,              // Profile Position Mode
-    PROFILE_VELOCITY = 3,              // Profile Velocity Mode
-    TORQUE_PROFILE = 4,                // Torque Profile Mode
-    HOMING = 6,                        // Homing Mode
-    CYCLIC_SYNCHRONOUS_POSITION = 8,   // Cyclic Synchronous Position Mode
-    CYCLIC_SYNCHRONOUS_VELOCITY = 9,   // Cyclic Synchronous Velocity Mode
-  } mode_of_operation;
+  esa::ewdl::ethercat::mode_of_operation_t mode_of_operation;
 
 
   bool init_ethercat()
@@ -65,6 +56,7 @@ private:
     }
 
     ec_master = esa::ewdl::ethercat::Master(ifname, slaves);
+
     if (!ec_master.init())
     {
       ROS_FATAL("Failed to initialize EtherCAT master.");
@@ -122,8 +114,8 @@ public:
 
   EWDL_HardwareInterface(ros::NodeHandle &node) :
     node(node),
-    mode_of_operation(mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY),
-    control_word(0x000F),
+    mode_of_operation(esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY),
+    control_word(0x0006),
     rail_trans(3.0/0.200) { }
 
 
@@ -212,168 +204,41 @@ public:
   }
 
 
-  bool run()
-  {
-    if (!ec_master.run())
-    {
-      ROS_FATAL("EtherCAT master failed to enter in OPERATIONAL STATE!");
-      return false;
-    }
+  /* */
+  bool run();
 
-    ROS_INFO("EtherCAT master entered in OPERATIONAL STATE");
-    return true;
-  }
+  bool run(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
+  /* */
+  // bool stop();
+
+  // bool stop(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
 
-  bool run(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
-  {
-    if (run())
-    {
-      res.success = true;
-      res.message = "EtherCAT master entered in OPERATIONAL STATE";
-    }
-    else
-    {
-      res.success = false;
-      res.message = "EtherCAT master failed to enter in OPERATIONAL STATE!";
-    }
+  /* */
+  bool set_zero_position();
 
-    return true;
-  }
+  bool set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
+  /* */
+  bool start_homing();
 
-  bool set_zero_position()
-  {
-    if (ec_master.set_zero_position() == 0)
-    {
-      ROS_ERROR("Failed to set Zero Position.");
-      return false;
-    }
+  bool start_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
-    ROS_INFO("Setted Zero Position.");
-    return true;
-  }
+  /* */
+  bool stop_homing();
 
+  bool stop_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
-  bool set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
-  {
-    if (set_zero_position())
-    {
-      res.success = true;
-      res.message = "Setted Zero Position.";
-    }
-    else
-    {
-      res.success = false;
-      res.message = "Failed to set zero position.";
-    }
+  /**/
+  bool start_motion();
 
-    return true;
-  }
+  bool start_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
+  /* */
+  bool stop_motion();
 
-  bool start_homing()
-  {
-    mode_of_operation = mode_of_operation_t::HOMING;
-    control_word = 0x001F;
-
-    return true;
-  }
-
-
-  bool start_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
-  {
-    if (start_homing())
-    {
-      res.success = true;
-      res.message = "Homing preocedure started successfully.";
-    }
-    else
-    {
-      res.success = false;
-      res.message = "Starting Homing preocedure failed.";
-    }
-
-    return true;
-  }
-
-
-  bool stop_homing()
-  {
-    mode_of_operation = mode_of_operation_t::HOMING;
-    control_word = 0x000F;
-
-    return true;
-  }
-
-
-  bool stop_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
-  {
-    if (stop_homing())
-    {
-      res.success = true;
-      res.message = "Homing preocedure stopped successfully.";
-    }
-    else
-    {
-      res.success = false;
-      res.message = "Sopping Homing preocedure failed.";
-    }
-
-    return true;
-  }
-
-
-  bool start_motion()
-  {
-    mode_of_operation = mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
-    control_word = 0x000F;
-
-    return true;
-  }
-
-
-  bool start_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
-  {
-    if (start_motion())
-    {
-      res.success = true;
-      res.message = "Motion started successfully.";
-    }
-    else
-    {
-      res.success = false;
-      res.message = "Starting motion mode failed.";
-    }
-
-    return true;
-  }
-
-
-  bool stop_motion()
-  {
-    mode_of_operation = mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
-    control_word = 0x010F;
-
-    return true;
-  }
-
-
-  bool stop_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
-  {
-    if (stop_motion())
-    {
-      res.success = true;
-      res.message = "Motion stopped successfully.";
-    }
-    else
-    {
-      res.success = false;
-      res.message = "Sopping motion failed.";
-    }
-
-    return true;
-  }
+  bool stop_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
 
   void read()
