@@ -5,6 +5,8 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ros/callback_queue.h>
+// std_srvs
+#include <std_srvs/Trigger.h>
 // controller_manager
 #include <controller_manager/controller_manager.h>
 // esa_servo
@@ -39,18 +41,25 @@ int main (int argc, char* argv[])
 
   if (!ewdl_hw.init())
   {
-    ROS_FATAL("Failed to initialize hardware interface!");
+    ROS_FATAL("Failed to initialize Hardware Interface!");
     ewdl_hw.close();
     return -1;
   }
+
+  // Advertised Services
+  auto start_homing_srv = node.advertiseService("start_homing", &esa::ewdl::EWDL_HardwareInterface::start_homing, &ewdl_hw);
+  auto stop_homing_srv = node.advertiseService("stop_homing", &esa::ewdl::EWDL_HardwareInterface::stop_homing, &ewdl_hw);
+  auto start_motion_srv = node.advertiseService("start_motion", &esa::ewdl::EWDL_HardwareInterface::start_motion, &ewdl_hw);
+  auto stop_motion_srv = node.advertiseService("stop_motion", &esa::ewdl::EWDL_HardwareInterface::stop_motion, &ewdl_hw);
+
 
   // Controller Manager
   controller_manager::ControllerManager controller_manager(&ewdl_hw, node);
 
 
-  if (!ewdl_hw.start())
+  if (!ewdl_hw.run())
   {
-    ROS_FATAL("Failed to start hardware interface!");
+    ROS_FATAL("Failed to run Hardware Interface!");
     ewdl_hw.close();
     return -1;
   }

@@ -6,6 +6,8 @@
 // roscpp
 #include <ros/ros.h>
 #include <ros/console.h>
+// std_srvs
+#include <std_srvs/Trigger.h>
 // controller_manager
 #include <controller_manager/controller_manager.h>
 // hardware_interface
@@ -28,48 +30,21 @@ static const double VELOCITY_STEP_FACTOR = 10000.0;
 
 
 class EWDL_HardwareInterface : public hardware_interface::RobotHW {
-protected:
+private:
   esa::ewdl::ethercat::Master ec_master;
 
-  ros::NodeHandle node;
+  uint16 control_word;
 
-  double loop_hz;
-  std::vector<std::string> joint_names;
-
-  transmission_interface::SimpleTransmission rail_trans;
-
-
-  transmission_interface::ActuatorToJointStateInterface act_to_jnt_state_interface;
-  transmission_interface::JointToActuatorPositionInterface jnt_to_act_pos_interface;
-  transmission_interface::JointToActuatorVelocityInterface jnt_to_act_vel_interface;
-
-  hardware_interface::JointStateInterface jnt_state_interface;
-  hardware_interface::PositionJointInterface jnt_pos_interface;
-  hardware_interface::VelocityJointInterface jnt_vel_interface;
-
-  //
-  std::vector<double> a_pos, a_pos_cmd;
-  std::vector<double> a_vel, a_vel_cmd;
-  std::vector<double> a_eff, a_eff_cmd;
-
-  std::vector<transmission_interface::ActuatorData> a_data, a_cmd_data;
-
-  //
-  std::vector<double> j_pos, j_pos_cmd;
-  std::vector<double> j_vel, j_vel_cmd;
-  std::vector<double> j_eff, j_eff_cmd;
-
-  std::vector<transmission_interface::JointData> j_data, j_cmd_data;
-
-
-  std::vector<double> joint_lower_limits;
-  std::vector<double> joint_upper_limits;
-
-
-public:
-
-
-  EWDL_HardwareInterface(ros::NodeHandle &node) : node(node), rail_trans(3.0/0.200) { }
+  enum mode_of_operation_t : int8
+  {
+    Q_PROGRAM = -1,                    // Q Program Mode (ESA specific)
+    PROFILE_POSITION = 1,              // Profile Position Mode
+    PROFILE_VELOCITY = 3,              // Profile Velocity Mode
+    TORQUE_PROFILE = 4,                // Torque Profile Mode
+    HOMING = 6,                        // Homing Mode
+    CYCLIC_SYNCHRONOUS_POSITION = 8,   // Cyclic Synchronous Position Mode
+    CYCLIC_SYNCHRONOUS_VELOCITY = 9,   // Cyclic Synchronous Velocity Mode
+  } mode_of_operation;
 
 
   bool init_ethercat()
@@ -107,9 +82,54 @@ public:
     return true;
   }
 
+protected:
+
+  ros::NodeHandle node;
+
+  double loop_hz;
+  std::vector<std::string> joint_names;
+
+  transmission_interface::SimpleTransmission rail_trans;
+
+
+  transmission_interface::ActuatorToJointStateInterface act_to_jnt_state_interface;
+  transmission_interface::JointToActuatorPositionInterface jnt_to_act_pos_interface;
+  transmission_interface::JointToActuatorVelocityInterface jnt_to_act_vel_interface;
+
+  hardware_interface::JointStateInterface jnt_state_interface;
+  hardware_interface::PositionJointInterface jnt_pos_interface;
+  hardware_interface::VelocityJointInterface jnt_vel_interface;
+
+  //
+  std::vector<double> a_pos, a_pos_cmd;
+  std::vector<double> a_vel, a_vel_cmd;
+  std::vector<double> a_eff, a_eff_cmd;
+
+  std::vector<transmission_interface::ActuatorData> a_data, a_cmd_data;
+
+  //
+  std::vector<double> j_pos, j_pos_cmd;
+  std::vector<double> j_vel, j_vel_cmd;
+  std::vector<double> j_eff, j_eff_cmd;
+
+  std::vector<transmission_interface::JointData> j_data, j_cmd_data;
+
+
+  std::vector<double> joint_lower_limits;
+  std::vector<double> joint_upper_limits;
+
+public:
+
+  EWDL_HardwareInterface(ros::NodeHandle &node) :
+    node(node),
+    mode_of_operation(mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY),
+    control_word(0x000F),
+    rail_trans(3.0/0.200) { }
+
 
   bool init()
   {
+    // initialize ethercat interface
     if (!init_ethercat())
     {
       ROS_FATAL("Failed to initialize EtherCAT communication!");
@@ -144,7 +164,7 @@ public:
     j_data.resize(n_joints);   j_cmd_data.resize(n_joints);
 
 
-    for (int i=0; i < n_joints; i++)
+    for (int i = 0; i < n_joints; i++)
     {
       a_data[i].position.push_back(&a_pos[i]);
       a_data[i].velocity.push_back(&a_vel[i]);
@@ -192,15 +212,119 @@ public:
   }
 
 
-  bool start()
+  bool run()
   {
-    if (!ec_master.start())
+    if (!ec_master.run())
     {
       ROS_FATAL("EtherCAT master failed to enter in OPERATIONAL STATE!");
       return false;
     }
 
     ROS_INFO("EtherCAT master entered in OPERATIONAL STATE");
+    return true;
+  }
+
+
+  bool start_homing()
+  {
+    mode_of_operation = mode_of_operation_t::HOMING;
+    control_word = 0x001F;
+
+    return true;
+  }
+
+
+  bool start_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+  {
+    if (start_homing())
+    {
+      res.success = true;
+      res.message = "Homing preocedure started successfully.";
+    }
+    else
+    {
+      res.success = false;
+      res.message = "Starting Homing preocedure failed.";
+    }
+
+    return true;
+  }
+
+
+  bool stop_homing()
+  {
+    mode_of_operation = mode_of_operation_t::HOMING;
+    control_word = 0x000F;
+
+    return true;
+  }
+
+
+  bool stop_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+  {
+    if (stop_homing())
+    {
+      res.success = true;
+      res.message = "Homing preocedure stopped successfully.";
+    }
+    else
+    {
+      res.success = false;
+      res.message = "Sopping Homing preocedure failed.";
+    }
+
+    return true;
+  }
+
+
+  bool start_motion()
+  {
+    mode_of_operation = mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
+    control_word = 0x000F;
+
+    return true;
+  }
+
+
+  bool start_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+  {
+    if (start_motion())
+    {
+      res.success = true;
+      res.message = "Motion started successfully.";
+    }
+    else
+    {
+      res.success = false;
+      res.message = "Starting motion mode failed.";
+    }
+
+    return true;
+  }
+
+
+  bool stop_motion()
+  {
+    mode_of_operation = mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
+    control_word = 0x010F;
+
+    return true;
+  }
+
+
+  bool stop_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+  {
+    if (stop_motion())
+    {
+      res.success = true;
+      res.message = "Motion stopped successfully.";
+    }
+    else
+    {
+      res.success = false;
+      res.message = "Sopping motion failed.";
+    }
+
     return true;
   }
 
@@ -219,8 +343,8 @@ public:
     jnt_to_act_pos_interface.propagate();
     jnt_to_act_vel_interface.propagate();
 
-    ec_master.rx_pdo.control_word = 0x000F;
-    ec_master.rx_pdo.mode_of_operation = 9;
+    ec_master.rx_pdo.control_word = control_word;
+    ec_master.rx_pdo.mode_of_operation = mode_of_operation;
     ec_master.rx_pdo.target_velocity = a_vel_cmd[0] * VELOCITY_STEP_FACTOR;
     ec_master.rx_pdo.touch_probe_function = 0;
     ec_master.rx_pdo.physical_outputs = 0x0000;
