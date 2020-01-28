@@ -275,7 +275,7 @@ public:
 
 
     // Homing Mode
-    uint8 homing_method = 0;
+    uint8 homing_method = 1;
     wkc += writeSDO<uint8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
 
     uint32 homing_speed[] = { 0x02, 10000, 1000 };
@@ -287,8 +287,17 @@ public:
     int32 home_offset = 0;
     wkc += writeSDO<int32>(1, HOME_OFFSET_IDX, 0x00, home_offset);
 
-    uint8 home_switch = 0;
+    uint8 home_switch = 8;
     wkc += writeSDO<uint8>(1, HOME_SWITCH_IDX, 0x00, home_switch);
+
+
+    int8 mode_of_operation = 9;
+    wkc += writeSDO<int8>(1, MODE_OF_OPERATION_IDX, 0x00, mode_of_operation);
+
+    int8 mode_of_operation_display;
+    wkc += readSDO<int8>(1, MODE_OF_OPERATION_DISPLAY_IDX, 0x00, mode_of_operation_display);
+
+    ROS_DEBUG("WKC: %d SDO 0x%.4x Mode of Operation: 0x%.2x", wkc, MODE_OF_OPERATION_DISPLAY_IDX, mode_of_operation_display);
 
 
     // Starting/Stopping Motion
@@ -374,6 +383,22 @@ public:
   }
 
 
+  int set_zero_position()
+  {
+    int wkc = 0;
+
+    uint8 zero_position;
+
+    zero_position = 1;
+    wkc += writeSDO<uint8>(1, ZERO_POSITION_IDX, 0x00, zero_position);
+
+    zero_position = 0;
+    wkc += writeSDO<uint8>(1, ZERO_POSITION_IDX, 0x00, zero_position);
+
+    return wkc;
+  }
+
+
   // Enable Cyclic Synchronous Velocity Mode
 
   /* In this mode the master controller sends target velocity (0x60FF) to the
@@ -415,7 +440,7 @@ public:
 
     // Safe-Operational -> Operational
     ec_slave[1].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
-    ec_writestate(0);
+    ec_writestate(1);
 
     return true;
   }

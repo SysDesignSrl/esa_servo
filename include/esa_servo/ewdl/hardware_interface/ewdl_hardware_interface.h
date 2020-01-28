@@ -225,6 +225,53 @@ public:
   }
 
 
+  bool run(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+  {
+    if (run())
+    {
+      res.success = true;
+      res.message = "EtherCAT master entered in OPERATIONAL STATE";
+    }
+    else
+    {
+      res.success = false;
+      res.message = "EtherCAT master failed to enter in OPERATIONAL STATE!";
+    }
+
+    return true;
+  }
+
+
+  bool set_zero_position()
+  {
+    if (ec_master.set_zero_position() == 0)
+    {
+      ROS_ERROR("Failed to set Zero Position.");
+      return false;
+    }
+
+    ROS_INFO("Setted Zero Position.");
+    return true;
+  }
+
+
+  bool set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+  {
+    if (set_zero_position())
+    {
+      res.success = true;
+      res.message = "Setted Zero Position.";
+    }
+    else
+    {
+      res.success = false;
+      res.message = "Failed to set zero position.";
+    }
+
+    return true;
+  }
+
+
   bool start_homing()
   {
     mode_of_operation = mode_of_operation_t::HOMING;

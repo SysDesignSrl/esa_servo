@@ -185,5 +185,14 @@ const uint16 CLEAR_ALARM_IDX = 0x2006;
 /* This object represents the current status code of the drive. */
 const uint16 STATUS_CODE_IDX = 0x200B;
 
+/* This object provides the feature to clear the position value in 0x6064
+ * (Position actual value). Set this value to 01h can clear the position value
+ * in 0x6064 (Position actual value). */
+const uint16 ZERO_POSITION_IDX = 0x200C;
+
+/* This object reads back a hexadecimal value of the most recent alarm code of
+ * the drive. */
+const uint16 ALARM_CODE_IDX = 0x200F;
+
 } } }
 #endif

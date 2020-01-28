@@ -47,8 +47,13 @@ int main (int argc, char* argv[])
   }
 
   // Advertised Services
+  auto run_srv = node.advertiseService("run", &esa::ewdl::EWDL_HardwareInterface::run, &ewdl_hw);
+
+  auto set_zero_position_srv = node.advertiseService("set_zero_position", &esa::ewdl::EWDL_HardwareInterface::set_zero_position, &ewdl_hw);
+
   auto start_homing_srv = node.advertiseService("start_homing", &esa::ewdl::EWDL_HardwareInterface::start_homing, &ewdl_hw);
   auto stop_homing_srv = node.advertiseService("stop_homing", &esa::ewdl::EWDL_HardwareInterface::stop_homing, &ewdl_hw);
+
   auto start_motion_srv = node.advertiseService("start_motion", &esa::ewdl::EWDL_HardwareInterface::start_motion, &ewdl_hw);
   auto stop_motion_srv = node.advertiseService("stop_motion", &esa::ewdl::EWDL_HardwareInterface::stop_motion, &ewdl_hw);
 
@@ -57,12 +62,12 @@ int main (int argc, char* argv[])
   controller_manager::ControllerManager controller_manager(&ewdl_hw, node);
 
 
-  if (!ewdl_hw.run())
-  {
-    ROS_FATAL("Failed to run Hardware Interface!");
-    ewdl_hw.close();
-    return -1;
-  }
+  // if (!ewdl_hw.run())
+  // {
+  //   ROS_FATAL("Failed to run Hardware Interface!");
+  //   ewdl_hw.close();
+  //   return -1;
+  // }
 
 
   ros::Time prev_time = ros::Time::now();
