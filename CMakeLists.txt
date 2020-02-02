@@ -110,7 +110,7 @@ find_package(Boost REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES ethercat-driver
-  CATKIN_DEPENDS roscpp std_msgs  std_srvs controller_manager hardware_interface
+  CATKIN_DEPENDS roscpp std_msgs std_srvs controller_manager hardware_interface
     transmission_interface soem
   DEPENDS Boost
 )

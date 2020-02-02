@@ -128,13 +128,13 @@ public:
       return false;
     }
 
-    if (!node.getParam("/EWDL/hardware_interface/loop_hz", loop_hz))
+    if (!node.getParam("/rail/hardware_interface/loop_hz", loop_hz))
     {
       ROS_FATAL("Hardware Interface: 'loop_hz' parameter not defined");
       return false;
     }
 
-    if (!node.getParam("/EWDL/hardware_interface/joints", joint_names))
+    if (!node.getParam("/rail/hardware_interface/joints", joint_names))
     {
       ROS_FATAL("Hardware Interface: 'joints' parameter not defined");
       return false;

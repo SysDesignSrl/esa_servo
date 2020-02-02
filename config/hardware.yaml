@@ -1,8 +1,8 @@
 ########################
 ## Hardware Interface ##
 ########################
-EWDL:
+rail:
   hardware_interface:
     loop_hz: 250
     joints:
-      - "rail_joint"
+      - rail_joint

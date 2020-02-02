@@ -24,7 +24,7 @@ int main (int argc, char* argv[])
 
 
   double loop_hz;
-  if (!node.getParam("/EWDL/hardware_interface/loop_hz", loop_hz))
+  if (!node.getParam("/rail/hardware_interface/loop_hz", loop_hz))
   {
     ROS_FATAL("Parameter 'loop_hz' not defined.");
     return -1;
