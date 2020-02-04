@@ -245,7 +245,6 @@ public:
     switch (ec_master.tx_pdo.mode_of_operation_display)
     {
       case esa::ewdl::ethercat::mode_of_operation_t::HOMING:
-        // ROS_DEBUG("%d %d", (status_word >> 10) & 0x01, (ec_master.tx_pdo.status_word >> 10) & 0x01);
         // Target Reached
         if (!((status_word >> 10) & 0x01) && ((ec_master.tx_pdo.status_word >> 10) & 0x01))
         {
