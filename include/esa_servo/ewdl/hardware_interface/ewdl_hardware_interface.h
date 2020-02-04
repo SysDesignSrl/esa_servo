@@ -35,6 +35,8 @@ private:
   esa::ewdl::ethercat::Master ec_master;
 
   uint16 status_word;
+  esa::ewdl::ethercat::mode_of_operation_t mode_of_operation_display;
+
   uint16 control_word = 0x000F;
   esa::ewdl::ethercat::mode_of_operation_t mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
 
@@ -281,6 +283,7 @@ public:
     }
 
     status_word = ec_master.tx_pdo.status_word;
+    mode_of_operation_display = ec_master.tx_pdo.mode_of_operation_display;
     a_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
     a_vel[0] = ec_master.tx_pdo.velocity_actual_value / VELOCITY_STEP_FACTOR;
 
