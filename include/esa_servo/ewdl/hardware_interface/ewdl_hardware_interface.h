@@ -283,7 +283,7 @@ public:
     }
 
     status_word = ec_master.tx_pdo.status_word;
-    mode_of_operation_display = ec_master.tx_pdo.mode_of_operation_display;
+    mode_of_operation_display = esa::ewdl::ethercat::mode_of_operation_t(ec_master.tx_pdo.mode_of_operation_display);
     a_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
     a_vel[0] = ec_master.tx_pdo.velocity_actual_value / VELOCITY_STEP_FACTOR;
 
