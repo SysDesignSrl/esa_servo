@@ -197,7 +197,7 @@ public:
     wkc += readSDO<uint8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
     ROS_DEBUG("WKC: %d SDO 0x%.4x Homing Method: 0x%.2x", wkc, HOMING_METHOD_IDX, homing_method);
 
-    uint32 homing_speed[] = { 0x02, 5000, 2000 };
+    uint32 homing_speed[] = { 0x02, 10000, 2000 };
     wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
     wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
 
@@ -353,9 +353,9 @@ public:
   }
 
 
-  bool run()
+  bool start()
   {
-    rx_pdo.control_word = 0x000F;
+    rx_pdo.control_word = 0x0006;
     rx_pdo.mode_of_operation = 6;
     rx_pdo.target_velocity = 0;
     rx_pdo.touch_probe_function = 0;
@@ -387,7 +387,6 @@ public:
   void close()
   {
     ec_close();
-    ROS_INFO("EtherCAT socket closed.");
   }
 
 };

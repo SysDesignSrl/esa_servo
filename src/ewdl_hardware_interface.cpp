@@ -1,9 +1,9 @@
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
 
-bool esa::ewdl::EWDL_HardwareInterface::run()
+bool esa::ewdl::EWDL_HardwareInterface::start()
 {
-  if (!ec_master.run())
+  if (!ec_master.start())
   {
     return false;
   }
@@ -12,9 +12,9 @@ bool esa::ewdl::EWDL_HardwareInterface::run()
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::run(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::EWDL_HardwareInterface::start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
-  if (run())
+  if (start())
   {
     res.success = true;
     res.message = "Hardware Interface running.";
@@ -63,8 +63,8 @@ bool esa::ewdl::EWDL_HardwareInterface::set_zero_position(std_srvs::TriggerReque
 
 bool esa::ewdl::EWDL_HardwareInterface::start_homing()
 {
-  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
   control_word = 0x001F;
+  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
 
   return true;
 }
@@ -75,7 +75,7 @@ bool esa::ewdl::EWDL_HardwareInterface::start_homing(std_srvs::TriggerRequest &r
   if (start_homing())
   {
     res.success = true;
-    res.message = "Homing preocedure started successfully.";
+    res.message = "Homing started.";
   }
   else
   {
@@ -89,8 +89,8 @@ bool esa::ewdl::EWDL_HardwareInterface::start_homing(std_srvs::TriggerRequest &r
 
 bool esa::ewdl::EWDL_HardwareInterface::stop_homing()
 {
-  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
   control_word = 0x000F;
+  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
 
   return true;
 }
@@ -101,12 +101,12 @@ bool esa::ewdl::EWDL_HardwareInterface::stop_homing(std_srvs::TriggerRequest &re
   if (stop_homing())
   {
     res.success = true;
-    res.message = "Homing preocedure stopped successfully.";
+    res.message = "Homing stopped.";
   }
   else
   {
     res.success = false;
-    res.message = "Failed to stop Homing preocedure.";
+    res.message = "Failed to stop Homing procedure.";
   }
 
   return true;
@@ -115,8 +115,8 @@ bool esa::ewdl::EWDL_HardwareInterface::stop_homing(std_srvs::TriggerRequest &re
 
 bool esa::ewdl::EWDL_HardwareInterface::start_motion()
 {
-  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
   control_word = 0x000F;
+  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
 
   return true;
 }
@@ -127,12 +127,12 @@ bool esa::ewdl::EWDL_HardwareInterface::start_motion(std_srvs::TriggerRequest &r
   if (start_motion())
   {
     res.success = true;
-    res.message = "Motion Mode started successfully.";
+    res.message = "Motion enabled.";
   }
   else
   {
     res.success = false;
-    res.message = "Starting Motion Mode failed.";
+    res.message = "Enablining Motion failed.";
   }
 
   return true;
@@ -141,8 +141,8 @@ bool esa::ewdl::EWDL_HardwareInterface::start_motion(std_srvs::TriggerRequest &r
 
 bool esa::ewdl::EWDL_HardwareInterface::stop_motion()
 {
-  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
   control_word = 0x010F;
+  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
 
   return true;
 }
@@ -153,12 +153,12 @@ bool esa::ewdl::EWDL_HardwareInterface::stop_motion(std_srvs::TriggerRequest &re
   if (stop_motion())
   {
     res.success = true;
-    res.message = "Motion stopped successfully.";
+    res.message = "Halt Motion.";
   }
   else
   {
     res.success = false;
-    res.message = "Sopping motion failed.";
+    res.message = "Halt motion failed.";
   }
 
   return true;

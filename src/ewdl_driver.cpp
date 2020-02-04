@@ -46,7 +46,7 @@ int main (int argc, char* argv[])
   }
 
   // Advertised Services
-  auto run_srv = node.advertiseService("run", &esa::ewdl::EWDL_HardwareInterface::run, &ewdl_hw);
+  auto start_srv = node.advertiseService("start", &esa::ewdl::EWDL_HardwareInterface::start, &ewdl_hw);
 
   auto set_zero_position_srv = node.advertiseService("set_zero_position", &esa::ewdl::EWDL_HardwareInterface::set_zero_position, &ewdl_hw);
 
@@ -61,9 +61,9 @@ int main (int argc, char* argv[])
   controller_manager::ControllerManager controller_manager(&ewdl_hw, node);
 
 
-  if (!ewdl_hw.run())
+  if (!ewdl_hw.start())
   {
-    ROS_FATAL("Failed to run Hardware Interface!");
+    ROS_FATAL("Failed to start Hardware Interface!");
     ewdl_hw.close();
     return -1;
   }

@@ -11,3 +11,10 @@ rail:
         type: velocity_controllers/JointPositionController
         joint: "rail_joint"
         pid: { p: 2.0, i: 0.0, d: 0.0, i_clamp: 0.0 }
+
+rail_controller:
+  type: velocity_controllers/JointTrajectoryController
+  joints:
+    - rail_joint
+  gains:
+    rail_joint: { p: 2.0,  d: 0.0, i: 0.0, i_clamp: 0.0 }

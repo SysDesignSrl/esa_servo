@@ -13,6 +13,6 @@
   <!-- -->
   <node ns="ewdl_driver" name="controller_loader" pkg="controller_manager" type="spawner" output="screen"
     args="/rail/controller/state
-          /rail/controller/position/rail_joint" />
+          /rail_controller" />
 
 </launch>

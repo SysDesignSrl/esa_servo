@@ -34,8 +34,9 @@ class EWDL_HardwareInterface : public hardware_interface::RobotHW {
 private:
   esa::ewdl::ethercat::Master ec_master;
 
-  uint16 control_word;
-  esa::ewdl::ethercat::mode_of_operation_t mode_of_operation;
+  uint16 status_word;
+  uint16 control_word = 0x000F;
+  esa::ewdl::ethercat::mode_of_operation_t mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
 
 
   bool init_ethercat()
@@ -112,11 +113,7 @@ protected:
 
 public:
 
-  EWDL_HardwareInterface(ros::NodeHandle &node) :
-    node(node),
-    mode_of_operation(esa::ewdl::ethercat::mode_of_operation_t::HOMING),
-    control_word(0x000F),
-    rail_trans(3.0/0.200) { }
+  EWDL_HardwareInterface(ros::NodeHandle &node) : node(node), rail_trans(3.0/0.200) { }
 
 
   bool init()
@@ -205,9 +202,9 @@ public:
 
 
   /* */
-  bool run();
+  bool start();
 
-  bool run(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+  bool start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
   // bool stop();
@@ -243,10 +240,52 @@ public:
 
   void read()
   {
-    a_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
-    a_vel[0] = ec_master.tx_pdo.position_actual_value / VELOCITY_STEP_FACTOR;
+    switch (ec_master.tx_pdo.mode_of_operation_display)
+    {
+      case esa::ewdl::ethercat::mode_of_operation_t::HOMING:
+        // ROS_DEBUG("%d %d", (status_word >> 10) & 0x01, (ec_master.tx_pdo.status_word >> 10) & 0x01);
+        // Target Reached
+        if (!((status_word >> 10) & 0x01) && ((ec_master.tx_pdo.status_word >> 10) & 0x01))
+        {
+          ROS_INFO("Homing Mode: Target Reached.");
+        }
+        // Homing Attained
+        if (!((status_word >> 12) & 0x01) && ((ec_master.tx_pdo.status_word >> 12) & 0x01))
+        {
+          ROS_INFO("Homing Mode: Homing Attained.");
+          stop_homing();
+        }
+        // Homing Error
+        if (!((status_word >> 13) & 0x01) && ((ec_master.tx_pdo.status_word >> 13) & 0x01))
+        {
+          ROS_WARN("Homing Mode: Homing Error.");
+        }
+        break;
 
-    ROS_DEBUG_THROTTLE(1.0, "status_word: 0x%.4x", ec_master.tx_pdo.status_word);
+      case esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY:
+        // Target Reached
+        if (!((status_word >> 10) & 0x01) && ((ec_master.tx_pdo.status_word >> 10) & 0x01))
+        {
+          ROS_INFO("Cyclic Synchronous Velocity Mode: Target Reached.");
+        }
+        // Following Error
+        if (!((status_word >> 13) & 0x01) && ((ec_master.tx_pdo.status_word >> 13) & 0x01))
+        {
+          ROS_WARN("Cyclic Synchronous Velocity Mode: Following Error.");
+        }
+        break;
+
+      default:
+
+        break;
+    }
+
+    status_word = ec_master.tx_pdo.status_word;
+    a_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
+    a_vel[0] = ec_master.tx_pdo.velocity_actual_value / VELOCITY_STEP_FACTOR;
+
+    ROS_DEBUG_THROTTLE(1.0, "status_word: 0x%.4x", status_word);
+    ROS_DEBUG_THROTTLE(1.0, "mode_of_operation display: %d", ec_master.tx_pdo.mode_of_operation_display);
     ROS_DEBUG_THROTTLE(1.0, "position_actual_value: %d", ec_master.tx_pdo.position_actual_value);
     ROS_DEBUG_THROTTLE(1.0, "digital_inputs: 0x%.8x", ec_master.tx_pdo.digital_inputs);
 
@@ -266,7 +305,7 @@ public:
     ec_master.rx_pdo.physical_outputs = 0x0000;
 
     ROS_DEBUG_THROTTLE(1.0, "control_word: 0x%.4x", control_word);
-    ROS_DEBUG_THROTTLE(1.0, "mode_of_operation: %d", mode_of_operation);
+
     ec_master.update();
   }
 
@@ -274,6 +313,7 @@ public:
   void close()
   {
     ec_master.close();
+    ROS_INFO("EtherCAT socket closed.");
   }
 
 };
