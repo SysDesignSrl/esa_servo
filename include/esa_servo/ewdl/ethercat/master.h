@@ -191,11 +191,20 @@ public:
 
 
     // Homing Mode
-    uint8 homing_method = 1;
+    uint8 homing_method = 2;
     wkc += writeSDO<uint8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
 
-    uint32 homing_speed[] = { 0x02, 10000, 1000 };
-    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x00, homing_speed);
+    wkc += readSDO<uint8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
+    ROS_DEBUG("WKC: %d SDO 0x%.4x Homing Method: 0x%.2x", wkc, HOMING_METHOD_IDX, homing_method);
+
+    uint32 homing_speed[] = { 0x02, 5000, 2000 };
+    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
+    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
+
+    uint32 homing_speed_read[3];
+    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x01, homing_speed_read[1]);
+    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x02, homing_speed_read[2]);
+    ROS_DEBUG("WKC: %d SDO 0x%.4x Homing Speed: %d %d", wkc, HOMING_SPEED_IDX, homing_speed_read[1], homing_speed_read[2]);
 
     uint32 homing_acceleration = 10000;
     wkc += writeSDO<uint32>(1, HOMING_ACCELERATION_IDX, 0x00, homing_acceleration);
@@ -346,8 +355,8 @@ public:
 
   bool run()
   {
-    rx_pdo.control_word = 0x010F;
-    rx_pdo.mode_of_operation = 9;
+    rx_pdo.control_word = 0x000F;
+    rx_pdo.mode_of_operation = 6;
     rx_pdo.target_velocity = 0;
     rx_pdo.touch_probe_function = 0;
     rx_pdo.physical_outputs = 0x0000;

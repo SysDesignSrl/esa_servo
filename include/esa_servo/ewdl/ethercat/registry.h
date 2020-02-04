@@ -109,62 +109,62 @@ const uint16 QUICKSTOP_DECELERATION_IDX = 0x6084;
 
 /* This object describes the rate of change of torque.
  * The unit of this object is mN·m/s. */
-const uint16 TORQUE_SLOPE_IDX = 0x06087;
+const uint16 TORQUE_SLOPE_IDX = 0x6087;
 
 /* This object determines the method that will be used during homing. */
-const uint16 HOMING_METHOD_IDX = 0x06098;
+const uint16 HOMING_METHOD_IDX = 0x6098;
 
 /* This object determines the speeds that will be used during homing.
  * There are two parts to define those speeds.
  * Sub-index 1 to set the speed to search home switch.
  * Sub-index 2 to set the speed to search zero position.
  * The unit of this object is count/s. */
-const uint16 HOMING_SPEED_IDX = 0x06099;
+const uint16 HOMING_SPEED_IDX = 0x6099;
 
 /* This object establishes the acceleration to be used for all accelerations and
  * decelerations with the standard homing modes.
  * The unit of this object is count/s 2 . */
-const uint16 HOMING_ACCELERATION_IDX = 0x0609A;
+const uint16 HOMING_ACCELERATION_IDX = 0x609A;
 
 /* This object configures the function of touch probe. */
-const uint16 TOUCH_PROBE_FUNCTION_IDX = 0x060B8;
+const uint16 TOUCH_PROBE_FUNCTION_IDX = 0x60B8;
 
 /* This object provides the status of touch probe. */
-const uint16 TOUCH_PROBE_STATUS_IDX = 0x060B9;
+const uint16 TOUCH_PROBE_STATUS_IDX = 0x60B9;
 
 /* This object provides the position value triggered by Touch Probe 1 at rising
  * edge. */
-const uint16 TOUCH_PROBE_POSITION_1_POSITIVE_VALUE_IDX = 0x060BA;
+const uint16 TOUCH_PROBE_POSITION_1_POSITIVE_VALUE_IDX = 0x60BA;
 
 /* This object provides the position value triggered by Touch Probe 1 at falling
  * edge. */
-const uint16 TOUCH_PROBE_POSITION_1_NEGATIVE_VALUE_IDX = 0x060BB;
+const uint16 TOUCH_PROBE_POSITION_1_NEGATIVE_VALUE_IDX = 0x60BB;
 
 /* This object provides the position value triggered by Touch Probe 2 at rising
  * edge. */
-const uint16 TOUCH_PROBE_POSITION_2_POSITIVE_VALUE_IDX = 0x060BC;
+const uint16 TOUCH_PROBE_POSITION_2_POSITIVE_VALUE_IDX = 0x60BC;
 
 /* This object provides the position value triggered by Touch Probe 2 at falling
  * edge. */
-const uint16 TOUCH_PROBE_POSITION_2_NEGATIVE_VALUE_IDX = 0x060BD;
+const uint16 TOUCH_PROBE_POSITION_2_NEGATIVE_VALUE_IDX = 0x60BD;
 
 /* This object displays the actual position error (following error) between the
  * target position and the actual position.
  * The unit of this object is encoder count. */
-const uint16 FOLLOWING_ERROR_ACTUAL_VALUE_IDX = 0x060F4;
+const uint16 FOLLOWING_ERROR_ACTUAL_VALUE_IDX = 0x60F4;
 
 /* This object monitors the inputs status of the drive. */
-const uint16 DIGITAL_INPUTS_IDX = 0x060FD;
+const uint16 DIGITAL_INPUTS_IDX = 0x60FD;
 
 /* This object configures or monitors the digital outputs of the drive. */
-const uint16 DIGITAL_OUTPUTS_IDX = 0x060FE;
+const uint16 DIGITAL_OUTPUTS_IDX = 0x60FE;
 
 /* This object configures the velocity parameters in Profile Velocity Mode and
  * Cyclic Sync Velocity Mode. The unit of this object is count/s. */
-const uint16 TARGET_VELOCITY_IDX = 0x060FF;
+const uint16 TARGET_VELOCITY_IDX = 0x60FF;
 
 /* This object provides information on the supported drive modes. */
-const uint16 SUPPORTED_DRIVE_MODES_IDX = 0x06502;
+const uint16 SUPPORTED_DRIVE_MODES_IDX = 0x6502;
 
 
 /* This object configures which input is used as the home switch in Homing. */

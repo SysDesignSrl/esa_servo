@@ -61,12 +61,12 @@ int main (int argc, char* argv[])
   controller_manager::ControllerManager controller_manager(&ewdl_hw, node);
 
 
-  // if (!ewdl_hw.run())
-  // {
-  //   ROS_FATAL("Failed to run Hardware Interface!");
-  //   ewdl_hw.close();
-  //   return -1;
-  // }
+  if (!ewdl_hw.run())
+  {
+    ROS_FATAL("Failed to run Hardware Interface!");
+    ewdl_hw.close();
+    return -1;
+  }
 
 
   ros::Time prev_time = ros::Time::now();

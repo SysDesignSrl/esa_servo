@@ -124,7 +124,7 @@ int readSDO(const uint16 slave, const uint16 index, const uint8 sub_index, T *va
   int wkc = 0;
 
   T *data = value; int size_of_data = sizeof(data);
-  wkc += ec_SDOread(slave, index, sub_index, FALSE, &size_of_data, data, EC_TIMEOUTRXM);
+  wkc += ec_SDOread(slave, index, sub_index, TRUE, &size_of_data, data, EC_TIMEOUTRXM);
 
   *value = *data;
 

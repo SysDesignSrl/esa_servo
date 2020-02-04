@@ -114,8 +114,8 @@ public:
 
   EWDL_HardwareInterface(ros::NodeHandle &node) :
     node(node),
-    mode_of_operation(esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY),
-    control_word(0x0006),
+    mode_of_operation(esa::ewdl::ethercat::mode_of_operation_t::HOMING),
+    control_word(0x000F),
     rail_trans(3.0/0.200) { }
 
 
@@ -246,6 +246,10 @@ public:
     a_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
     a_vel[0] = ec_master.tx_pdo.position_actual_value / VELOCITY_STEP_FACTOR;
 
+    ROS_DEBUG_THROTTLE(1.0, "status_word: 0x%.4x", ec_master.tx_pdo.status_word);
+    ROS_DEBUG_THROTTLE(1.0, "position_actual_value: %d", ec_master.tx_pdo.position_actual_value);
+    ROS_DEBUG_THROTTLE(1.0, "digital_inputs: 0x%.8x", ec_master.tx_pdo.digital_inputs);
+
     act_to_jnt_state_interface.propagate();
   }
 
@@ -261,6 +265,8 @@ public:
     ec_master.rx_pdo.touch_probe_function = 0;
     ec_master.rx_pdo.physical_outputs = 0x0000;
 
+    ROS_DEBUG_THROTTLE(1.0, "control_word: 0x%.4x", control_word);
+    ROS_DEBUG_THROTTLE(1.0, "mode_of_operation: %d", mode_of_operation);
     ec_master.update();
   }
 
