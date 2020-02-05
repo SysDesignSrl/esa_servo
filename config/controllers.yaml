@@ -16,5 +16,8 @@ rail_controller:
   type: velocity_controllers/JointTrajectoryController
   joints:
     - rail_joint
+  constraints:
+    stopped_velocity_tolerance: 0.10
   gains:
-    rail_joint: { p: 2.0,  d: 0.0, i: 0.0, i_clamp: 0.0 }
+    rail_joint: { p: 10.0, i: 0.0, d: 0.0, i_clamp: 0.0 }
+  action_monitor_rate: 250
