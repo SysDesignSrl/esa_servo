@@ -1,5 +1,5 @@
-#ifndef ESA_EWDL_ETHERCAT_REGISTRY_INDEXES_H
-#define ESA_EWDL_ETHERCAT_REGISTRY_INDEXES_H
+#ifndef ESA_EWDL_ETHERCAT_REGISTRY_IDX_H
+#define ESA_EWDL_ETHERCAT_REGISTRY_IDX_H
 
 
 namespace esa { namespace ewdl { namespace ethercat {

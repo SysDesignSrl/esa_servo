@@ -9,9 +9,9 @@
 // SOEM
 #include "ethercat.h"
 // esa_servo
-#include "esa_servo/ewdl/ethercat/registry.h"
-#include "esa_servo/ewdl/ethercat/pdo.h"
 #include "esa_servo/ewdl/ethercat/common.h"
+#include "esa_servo/ewdl/ethercat/registry_idx.h"
+#include "esa_servo/ewdl/ethercat/pdo.h"
 
 #define EWDL_Z1   1
 

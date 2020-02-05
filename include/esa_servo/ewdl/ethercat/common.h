@@ -279,13 +279,13 @@ inline void print_status_word(uint16 slave, uint16 status_word)
 
 inline void print_error_code(uint16 slave, uint16 error_code)
 {
-  ROS_ERROR("%s: Error Code: 0x%.4x %s", ec_slave[slave].name, error_code, esa::ewdl::ethercat::error_codes[error_code].c_str());
+  ROS_ERROR("%s: Error Code: 0x%.4x %s", ec_slave[slave].name, error_code, error_codes[error_code].c_str());
 }
 
 
 inline void print_alarm_code(uint16 slave, uint32 alarm_code)
 {
-  ROS_ERROR("%s: Alarm Code: 0x%.8x %s", ec_slave[slave].name, alarm_code, esa::ewdl::ethercat::alarm_codes[alarm_code].c_str());
+  ROS_ERROR("%s: Alarm Code: 0x%.8x %s", ec_slave[slave].name, alarm_code, alarm_codes[alarm_code].c_str());
 }
 
 } } } // namespace
