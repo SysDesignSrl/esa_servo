@@ -69,6 +69,14 @@ int main (int argc, char* argv[])
   }
 
 
+  if (!ewdl_hw.start_motion())
+  {
+    ROS_FATAL("Failed to start Motion!");
+    ewdl_hw.close();
+    return -1;
+  }
+
+
   ros::Time prev_time = ros::Time::now();
   ros::Rate rate(loop_hz);
   while (ros::ok())
