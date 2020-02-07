@@ -38,7 +38,7 @@ private:
   esa::ewdl::ethercat::mode_of_operation_t mode_of_operation_display;
 
   uint16 control_word = 0x000F;
-  esa::ewdl::ethercat::mode_of_operation_t mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
+  esa::ewdl::ethercat::mode_of_operation_t mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
 
 
   bool init_ethercat()
@@ -242,7 +242,13 @@ public:
 
   void read()
   {
-    switch (ec_master.tx_pdo.mode_of_operation_display)
+    status_word = ec_master.tx_pdo.status_word;
+    mode_of_operation_display = esa::ewdl::ethercat::mode_of_operation_t(ec_master.tx_pdo.mode_of_operation_display);
+    a_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
+    a_vel[0] = ec_master.tx_pdo.velocity_actual_value / VELOCITY_STEP_FACTOR;
+
+
+    switch (mode_of_operation_display)
     {
       case esa::ewdl::ethercat::mode_of_operation_t::HOMING:
         // Target Reached
@@ -254,7 +260,6 @@ public:
         if (!((status_word >> 12) & 0x01) && ((ec_master.tx_pdo.status_word >> 12) & 0x01))
         {
           ROS_INFO("Homing Mode: Homing Attained.");
-          stop_homing();
         }
         // Homing Error
         if (!((status_word >> 13) & 0x01) && ((ec_master.tx_pdo.status_word >> 13) & 0x01))
@@ -280,11 +285,6 @@ public:
 
         break;
     }
-
-    status_word = ec_master.tx_pdo.status_word;
-    mode_of_operation_display = esa::ewdl::ethercat::mode_of_operation_t(ec_master.tx_pdo.mode_of_operation_display);
-    a_pos[0] = ec_master.tx_pdo.position_actual_value / POSITION_STEP_FACTOR;
-    a_vel[0] = ec_master.tx_pdo.velocity_actual_value / VELOCITY_STEP_FACTOR;
 
     ROS_DEBUG_THROTTLE(1.0, "status_word: 0x%.4x", status_word);
     ROS_DEBUG_THROTTLE(1.0, "mode_of_operation display: %d", ec_master.tx_pdo.mode_of_operation_display);

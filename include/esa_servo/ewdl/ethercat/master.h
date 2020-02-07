@@ -237,12 +237,12 @@ public:
     wkc += writeSDO<uint8>(1, HOME_SWITCH_IDX, 0x00, home_switch);
 
 
-    int8 mode_of_operation = 6;
-    wkc += writeSDO<int8>(1, MODE_OF_OPERATION_IDX, 0x00, mode_of_operation);
-
-    int8 mode_of_operation_display;
-    wkc += readSDO<int8>(1, MODE_OF_OPERATION_DISPLAY_IDX, 0x00, mode_of_operation_display);
-    ROS_DEBUG("WKC: %d SDO 0x%.4x Mode of Operation Display: 0x%.2x", wkc, MODE_OF_OPERATION_DISPLAY_IDX, mode_of_operation_display);
+    // int8 mode_of_operation = 6;
+    // wkc += writeSDO<int8>(1, MODE_OF_OPERATION_IDX, 0x00, mode_of_operation);
+    //
+    // int8 mode_of_operation_display;
+    // wkc += readSDO<int8>(1, MODE_OF_OPERATION_DISPLAY_IDX, 0x00, mode_of_operation_display);
+    // ROS_DEBUG("WKC: %d SDO 0x%.4x Mode of Operation Display: 0x%.2x", wkc, MODE_OF_OPERATION_DISPLAY_IDX, mode_of_operation_display);
 
     return wkc;
   }
