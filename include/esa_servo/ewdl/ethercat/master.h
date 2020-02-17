@@ -41,12 +41,15 @@ inline int slave_setup(uint16 slave)
 
 class Master {
 private:
+  const static size_t MAX_IO_MAP_SIZE = 4096;
 
   std::string ifname;
   std::vector<std::string> slaves;
 
   int wkc = 0;
   int ec_state = EC_STATE_NONE;
+
+  uint8 io_map[MAX_IO_MAP_SIZE];
 
 
   bool network_configuration()
@@ -139,16 +142,17 @@ public:
       ec_slave[slave].PO2SOconfig = slave_setup;
     }
 
-    uint8 IOmap[1024];
-    int usedmem = ec_config_map(&IOmap);
-    if (usedmem <= sizeof(IOmap))
+    int used_mem = ec_config_map(&io_map);
+    if (used_mem > sizeof(io_map))
     {
-      ROS_DEBUG("IOmap size: %d", usedmem);
+      ROS_ERROR("IO Map size: %d > MAX_IO_MAP_SIZE: %lu", used_mem, sizeof(io_map));
+      return false;
     }
+    ROS_DEBUG("io_map size: %d", used_mem);
 
 
     // print slaves configuration
-    for (int slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
     {
       print_sm(slave, 0);     // SM0
       print_sm(slave, 1);     // SM1
@@ -162,8 +166,10 @@ public:
     print_ec_state(0);
 
 
+    //
     fault_reset();
 
+    //
     init_homing();
 
 
@@ -184,7 +190,7 @@ public:
   }
 
 
-  // Failt Reset
+  // Fault Reset
   int fault_reset()
   {
     uint16 control_word = 0x0080;
@@ -221,10 +227,8 @@ public:
     ROS_DEBUG("WKC: %d SDO 0x%.4x Homing Method: 0x%.2x", wkc, HOMING_METHOD_IDX, homing_method);
 
     uint32 homing_speed[] = { 0x02, 10000, 2000 };
-    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
-    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
-    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
-    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
+    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x00, homing_speed);
+    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x00, homing_speed);
     ROS_DEBUG("WKC: %d SDO 0x%.4x Homing Speed: %d %d", wkc, HOMING_SPEED_IDX, homing_speed[1], homing_speed[2]);
 
     uint32 homing_acceleration = 10000;
