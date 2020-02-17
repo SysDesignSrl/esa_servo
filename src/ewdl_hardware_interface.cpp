@@ -66,6 +66,9 @@ bool esa::ewdl::EWDL_HardwareInterface::start_homing()
   control_word = 0x001F;
   mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
 
+  //
+  reset_controllers = true;
+
   return true;
 }
 
@@ -91,6 +94,9 @@ bool esa::ewdl::EWDL_HardwareInterface::stop_homing()
 {
   control_word = 0x000F;
   mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
+
+  //
+  reset_controllers = false;
 
   return true;
 }

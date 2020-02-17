@@ -1,7 +1,7 @@
 <launch>
   <arg name="debug" default="false" />
 
-  <env if="$(arg debug)" name="ROSCONSOLE_CONFIG_FILE" value="$(find esa_servo)/rosconsole.conf" />
+  <env if="$(arg debug)" name="ROSCONSOLE_CONFIG_FILE" value="$(find esa_servo)/rosconsole.conf"/>
 
   <rosparam command="load" file="$(find esa_servo)/config/hardware.yaml" />
   <rosparam command="load" file="$(find esa_servo)/config/controllers.yaml" />
@@ -15,6 +15,6 @@
   <!-- -->
   <node ns="ewdl_driver" name="controller_loader" pkg="controller_manager" type="spawner" output="screen"
     args="/rail/controller/state
-          /rail_controller" />
+          /rail/controller/rail_controller" />
 
 </launch>

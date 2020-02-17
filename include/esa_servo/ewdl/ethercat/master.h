@@ -221,14 +221,16 @@ public:
   // Homing Mode
   int init_homing()
   {
-    uint8 homing_method = 2;
-    wkc += writeSDO<uint8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
-    wkc += readSDO<uint8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
+    int8 homing_method = 2;
+    wkc += writeSDO<int8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
+    wkc += readSDO<int8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
     ROS_DEBUG("WKC: %d SDO 0x%.4x Homing Method: 0x%.2x", wkc, HOMING_METHOD_IDX, homing_method);
 
     uint32 homing_speed[] = { 0x02, 10000, 2000 };
-    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x00, homing_speed);
-    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x00, homing_speed);
+    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
+    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
+    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
+    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
     ROS_DEBUG("WKC: %d SDO 0x%.4x Homing Speed: %d %d", wkc, HOMING_SPEED_IDX, homing_speed[1], homing_speed[2]);
 
     uint32 homing_acceleration = 10000;

@@ -2,7 +2,7 @@
 ## EtherCAT Master ##
 #####################
 
-ifname: "enp2s0"
-
+ifname: "enp7s0f1"
+  # EtherCAT Master interface
 slaves:
   - "EWDL Servo"

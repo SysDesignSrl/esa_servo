@@ -27,7 +27,7 @@ int main (int argc, char* argv[])
   if (!node.getParam("/rail/hardware_interface/loop_hz", loop_hz))
   {
     ROS_FATAL("Parameter 'loop_hz' not defined.");
-    return -1;
+    return 1;
   }
 
 
@@ -42,7 +42,7 @@ int main (int argc, char* argv[])
   {
     ROS_FATAL("Failed to initialize Hardware Interface!");
     ewdl_hw.close();
-    return -1;
+    return 1;
   }
 
   // Advertised Services
@@ -65,7 +65,7 @@ int main (int argc, char* argv[])
   {
     ROS_FATAL("Failed to start Hardware Interface!");
     ewdl_hw.close();
-    return -1;
+    return 1;
   }
 
 
@@ -73,7 +73,7 @@ int main (int argc, char* argv[])
   {
     ROS_FATAL("Failed to start Motion!");
     ewdl_hw.close();
-    return -1;
+    return 1;
   }
 
 
@@ -87,11 +87,12 @@ int main (int argc, char* argv[])
     ROS_DEBUG_THROTTLE(1.0, "Period: %fs", period.toSec());
 
     ewdl_hw.read();
-    controller_manager.update(time, period);
+    controller_manager.update(time, period, ewdl_hw.reset_controllers);
     ewdl_hw.write();
 
     prev_time = time;
   }
+
 
   ewdl_hw.close();
   return 0;

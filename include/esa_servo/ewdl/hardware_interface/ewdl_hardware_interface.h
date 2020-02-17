@@ -58,6 +58,7 @@ private:
       return false;
     }
 
+
     ec_master = esa::ewdl::ethercat::Master(ifname, slaves);
 
     if (!ec_master.init())
@@ -66,10 +67,10 @@ private:
       return false;
     }
 
+
     // EtherCAT Master
     ROS_INFO("EtherCAT Master network interface: %s", ifname.c_str());
-
-    for (int i=0; i < slaves.size(); i++)
+    for (int i = 0; i < slaves.size(); i++)
     {
       ROS_INFO("EtherCAT Slave[%d]: %s", i+1, slaves[i].c_str());
     }
@@ -115,7 +116,13 @@ protected:
 
 public:
 
-  EWDL_HardwareInterface(ros::NodeHandle &node) : node(node), rail_trans(3.0/0.200) { }
+  bool reset_controllers = false;
+
+
+  EWDL_HardwareInterface(ros::NodeHandle &node) : node(node), rail_trans(3.0/0.200)
+  {
+
+  }
 
 
   bool init()
@@ -123,19 +130,19 @@ public:
     // initialize ethercat interface
     if (!init_ethercat())
     {
-      ROS_FATAL("Failed to initialize EtherCAT communication!");
+      ROS_ERROR("Failed to initialize EtherCAT communication!");
       return false;
     }
 
     if (!node.getParam("/rail/hardware_interface/loop_hz", loop_hz))
     {
-      ROS_FATAL("Hardware Interface: 'loop_hz' parameter not defined");
+      ROS_ERROR("Parameter 'loop_hz' not defined!");
       return false;
     }
 
     if (!node.getParam("/rail/hardware_interface/joints", joint_names))
     {
-      ROS_FATAL("Hardware Interface: 'joints' parameter not defined");
+      ROS_ERROR("Parameter 'joints' not defined!");
       return false;
     }
 
@@ -205,38 +212,30 @@ public:
 
   /* */
   bool start();
-
   bool start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
   // bool stop();
-
   // bool stop(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
-
 
   /* */
   bool set_zero_position();
-
   bool set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
   bool start_homing();
-
   bool start_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
   bool stop_homing();
-
   bool stop_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /**/
   bool start_motion();
-
   bool start_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
   bool stop_motion();
-
   bool stop_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
 
