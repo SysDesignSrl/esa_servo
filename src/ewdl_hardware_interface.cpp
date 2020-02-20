@@ -63,12 +63,15 @@ bool esa::ewdl::EWDL_HardwareInterface::set_zero_position(std_srvs::TriggerReque
 
 bool esa::ewdl::EWDL_HardwareInterface::start_homing()
 {
-  control_word = 0x001F;
-  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
+  if (!ec_master.start_homing())
+  {
+    ROS_ERROR("Failed to start Homing preocedure.");
+    return false;
+  }
 
-  //
   reset_controllers = true;
 
+  ROS_INFO("Homing started.");
   return true;
 }
 
@@ -92,12 +95,15 @@ bool esa::ewdl::EWDL_HardwareInterface::start_homing(std_srvs::TriggerRequest &r
 
 bool esa::ewdl::EWDL_HardwareInterface::stop_homing()
 {
-  control_word = 0x000F;
-  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::HOMING;
+  if (!ec_master.stop_homing())
+  {
+    ROS_ERROR("Failed to stop Homing preocedure.");
+    return false;
+  }
 
-  //
   reset_controllers = false;
 
+  ROS_INFO("Homing stopped.");
   return true;
 }
 
@@ -121,9 +127,13 @@ bool esa::ewdl::EWDL_HardwareInterface::stop_homing(std_srvs::TriggerRequest &re
 
 bool esa::ewdl::EWDL_HardwareInterface::start_motion()
 {
-  control_word = 0x000F;
-  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
+  if (!ec_master.start_cyclic_syncronous_velocity())
+  {
+    ROS_ERROR("Failed to start motion.");
+    return false;
+  }
 
+  ROS_INFO("Motion started.");
   return true;
 }
 
@@ -133,12 +143,12 @@ bool esa::ewdl::EWDL_HardwareInterface::start_motion(std_srvs::TriggerRequest &r
   if (start_motion())
   {
     res.success = true;
-    res.message = "Motion enabled.";
+    res.message = "Motion started.";
   }
   else
   {
     res.success = false;
-    res.message = "Enablining Motion failed.";
+    res.message = "Failed to start motion.";
   }
 
   return true;
@@ -147,9 +157,13 @@ bool esa::ewdl::EWDL_HardwareInterface::start_motion(std_srvs::TriggerRequest &r
 
 bool esa::ewdl::EWDL_HardwareInterface::stop_motion()
 {
-  control_word = 0x010F;
-  mode_of_operation = esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
+  if (!ec_master.stop_cyclic_syncronous_velocity())
+  {
+    ROS_ERROR("Failed to stop motion.");
+    return false;
+  }
 
+  ROS_INFO("Motion stopped.");
   return true;
 }
 

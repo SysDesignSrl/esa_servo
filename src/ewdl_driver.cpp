@@ -68,7 +68,6 @@ int main (int argc, char* argv[])
     return 1;
   }
 
-
   if (!ewdl_hw.start_motion())
   {
     ROS_FATAL("Failed to start Motion!");
@@ -76,12 +75,13 @@ int main (int argc, char* argv[])
     return 1;
   }
 
-
   ros::Time prev_time = ros::Time::now();
   ros::Rate rate(loop_hz);
+
   while (ros::ok())
   {
     rate.sleep();
+
     const ros::Time time = ros::Time::now();
     const ros::Duration period = time - prev_time;
     ROS_DEBUG_THROTTLE(1.0, "Period: %fs", period.toSec());

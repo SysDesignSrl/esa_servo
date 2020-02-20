@@ -8,6 +8,8 @@
 #include <ros/console.h>
 // SOEM
 #include "ethercat.h"
+// Boost
+#include <boost/variant.hpp>
 // esa_servo
 #include "esa_servo/ewdl/ethercat/common.h"
 #include "esa_servo/ewdl/ethercat/registry_idx.h"
@@ -92,8 +94,8 @@ private:
 
 public:
 
-  esa::ewdl::ethercat::pdo::RxPDO1 rx_pdo;
-  esa::ewdl::ethercat::pdo::TxPDO1 tx_pdo;
+  std::vector<esa::ewdl::ethercat::pdo::RxPDO1> rx_pdo;
+  std::vector<esa::ewdl::ethercat::pdo::TxPDO1> tx_pdo;
 
   Master() { }
 
@@ -133,11 +135,14 @@ public:
 
     // Distributed Clock
     ec_configdc();
-    ec_dcsync0(EWDL_Z1, TRUE, 4000000U, 0);
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      ec_dcsync0(slave, TRUE, 4000000U, 0);
+    }
 
 
     // Pre-Operational -> Safe-Operational
-    for (int slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
     {
       ec_slave[slave].PO2SOconfig = slave_setup;
     }
@@ -165,90 +170,93 @@ public:
     ec_state = ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE);
     print_ec_state(0);
 
-
     //
-    fault_reset();
-
-    //
-    init_homing();
+    rx_pdo.resize(1+ec_slavecount);
+    tx_pdo.resize(1+ec_slavecount);
 
 
-    uint16 control_word = 0x0006;
-    wkc += writeSDO<uint16>(1, CONTROL_WORD_IDX, 0x00, control_word);
-
-    uint16 status_word;
-    wkc += readSDO<uint16>(1, STATUS_WORD_IDX, 0x00, status_word);
-    ROS_DEBUG("WKC: %d SDO 0x%.4x Status Word: 0x%.4x", wkc, STATUS_WORD_IDX, status_word);
-
-
-    // Status Code
-    uint32 status_code;
-    wkc += readSDO<uint32>(1, STATUS_CODE_IDX, 0x00, status_code);
-    ROS_DEBUG("WKC: %d SDO 0x%.4x Status Code: 0x%.4x", wkc, STATUS_CODE_IDX, status_code);
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      //
+      fault_reset(slave);
+      //
+      init_homing(slave);
+      //
+      init_slave(slave);
+    }
 
     return true;
   }
 
 
+  // Ready to Switch On
+  int init_slave(uint16 slave)
+  {
+    uint16 control_word = 0x0006;
+    wkc += writeSDO<uint16>(slave, CONTROL_WORD_IDX, 0x00, control_word);
+
+    uint16 status_word;
+    wkc += readSDO<uint16>(slave, STATUS_WORD_IDX, 0x00, status_word);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Status Word: 0x%.4x", wkc, slave, STATUS_WORD_IDX, status_word);
+
+    // Status Code
+    uint32 status_code;
+    wkc += readSDO<uint32>(slave, STATUS_CODE_IDX, 0x00, status_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Status Code: 0x%.4x", wkc, slave, STATUS_CODE_IDX, status_code);
+  }
+
+
   // Fault Reset
-  int fault_reset()
+  int fault_reset(uint16 slave)
   {
     uint16 control_word = 0x0080;
-    wkc += writeSDO<uint16>(1, CONTROL_WORD_IDX, 0x00, control_word);
+    wkc += writeSDO<uint16>(slave, CONTROL_WORD_IDX, 0x00, control_word);
 
     uint16 error_code;
-    wkc += readSDO<uint16>(1, ERROR_CODE_IDX, 0x00, error_code);
-    ROS_DEBUG("WKC: %d SDO 0x%.4x Error Code: 0x%.4x", wkc, ERROR_CODE_IDX, error_code);
+    wkc += readSDO<uint16>(slave, ERROR_CODE_IDX, 0x00, error_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Error Code: 0x%.4x", wkc, slave, ERROR_CODE_IDX, error_code);
 
     return wkc;
   }
 
 
   // Clear Alarm
-  int clear_alarm()
+  int clear_alarm(uint16 slave)
   {
     uint8 clear_alarm = 0x01;
-    wkc += writeSDO<uint8>(1, CLEAR_ALARM_IDX, 0x00, clear_alarm);
+    wkc += writeSDO<uint8>(0, CLEAR_ALARM_IDX, 0x00, clear_alarm);
 
     uint32 alarm_code;
-    wkc += readSDO<uint32>(1, ALARM_CODE_IDX, 0x00, alarm_code);
-    ROS_DEBUG("WKC: %d SDO 0x%.4x Alarm Code: 0x%.8x", wkc, ALARM_CODE_IDX, alarm_code);
+    wkc += readSDO<uint32>(0, ALARM_CODE_IDX, 0x00, alarm_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Alarm Code: 0x%.8x", wkc, slave, ALARM_CODE_IDX, alarm_code);
 
     return wkc;
   }
 
 
   // Homing Mode
-  int init_homing()
+  int init_homing(uint16 slave)
   {
     int8 homing_method = 2;
-    wkc += writeSDO<int8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
-    wkc += readSDO<int8>(1, HOMING_METHOD_IDX, 0x00, homing_method);
-    ROS_DEBUG("WKC: %d SDO 0x%.4x Homing Method: 0x%.2x", wkc, HOMING_METHOD_IDX, homing_method);
+    wkc += writeSDO<int8>(slave, HOMING_METHOD_IDX, 0x00, homing_method);
+    wkc += readSDO<int8>(slave, HOMING_METHOD_IDX, 0x00, homing_method);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Method: 0x%.2x", wkc, slave, HOMING_METHOD_IDX, homing_method);
 
     uint32 homing_speed[] = { 0x02, 10000, 2000 };
-    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
-    wkc += writeSDO<uint32>(1, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
-    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
-    wkc += readSDO<uint32>(1, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
-    ROS_DEBUG("WKC: %d SDO 0x%.4x Homing Speed: %d %d", wkc, HOMING_SPEED_IDX, homing_speed[1], homing_speed[2]);
+    wkc += writeSDO<uint32>(slave, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
+    wkc += writeSDO<uint32>(slave, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
+    wkc += readSDO<uint32>(slave, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
+    wkc += readSDO<uint32>(slave, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Speed: %d %d", wkc, slave, HOMING_SPEED_IDX, homing_speed[1], homing_speed[2]);
 
     uint32 homing_acceleration = 10000;
-    wkc += writeSDO<uint32>(1, HOMING_ACCELERATION_IDX, 0x00, homing_acceleration);
+    wkc += writeSDO<uint32>(slave, HOMING_ACCELERATION_IDX, 0x00, homing_acceleration);
 
     int32 home_offset = 0;
-    wkc += writeSDO<int32>(1, HOME_OFFSET_IDX, 0x00, home_offset);
+    wkc += writeSDO<int32>(slave, HOME_OFFSET_IDX, 0x00, home_offset);
 
     uint8 home_switch = 8;
-    wkc += writeSDO<uint8>(1, HOME_SWITCH_IDX, 0x00, home_switch);
-
-
-    // int8 mode_of_operation = 6;
-    // wkc += writeSDO<int8>(1, MODE_OF_OPERATION_IDX, 0x00, mode_of_operation);
-    //
-    // int8 mode_of_operation_display;
-    // wkc += readSDO<int8>(1, MODE_OF_OPERATION_DISPLAY_IDX, 0x00, mode_of_operation_display);
-    // ROS_DEBUG("WKC: %d SDO 0x%.4x Mode of Operation Display: 0x%.2x", wkc, MODE_OF_OPERATION_DISPLAY_IDX, mode_of_operation_display);
+    wkc += writeSDO<uint8>(slave, HOME_SWITCH_IDX, 0x00, home_switch);
 
     return wkc;
   }
@@ -256,17 +264,29 @@ public:
 
   bool start_homing()
   {
-    rx_pdo.control_word = 0x001F;
-    rx_pdo.mode_of_operation = 6;
-    rx_pdo.target_velocity = 0;
-    rx_pdo.touch_probe_function = 0;
-    rx_pdo.physical_outputs = 0x0000;
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      rx_pdo[slave].control_word = 0x001F;
+      rx_pdo[slave].mode_of_operation = 6;
+      // rx_pdo[slave].target_velocity = 0;
+      // rx_pdo[slave].touch_probe_function = 0;
+      // rx_pdo[slave].physical_outputs = 0x0000;
+    }
 
-    update();
+    return true;
+  }
 
-    // Safe-Operational -> Operational
-    ec_slave[1].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
-    ec_writestate(0);
+
+  bool stop_homing()
+  {
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      rx_pdo[slave].control_word = 0x000F;
+      rx_pdo[slave].mode_of_operation = 6;
+      // rx_pdo[slave].target_velocity = 0;
+      // rx_pdo[slave].touch_probe_function = 0;
+      // rx_pdo[slave].physical_outputs = 0x0000;
+    }
 
     return true;
   }
@@ -274,31 +294,34 @@ public:
 
   int set_zero_position()
   {
-    uint8 zero_position;
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      uint8 zero_position;
 
-    zero_position = 0x01;
-    wkc += writeSDO<uint8>(1, ZERO_POSITION_IDX, 0x00, zero_position);
+      zero_position = 0x01;
+      wkc += writeSDO<uint8>(slave, ZERO_POSITION_IDX, 0x00, zero_position);
 
-    zero_position = 0x00;
-    wkc += writeSDO<uint8>(1, ZERO_POSITION_IDX, 0x00, zero_position);
+      zero_position = 0x00;
+      wkc += writeSDO<uint8>(slave, ZERO_POSITION_IDX, 0x00, zero_position);
+    }
 
     return wkc;
   }
 
 
-  int init_profile()
+  int init_profile(uint16 slave)
   {
     int32 target_position = 0;
-    wkc += writeSDO(EWDL_Z1, TARGET_POSITION_IDX, 0x00, target_position);
+    wkc += writeSDO(slave, TARGET_POSITION_IDX, 0x00, target_position);
 
     uint32 profile_velocity = 200000;
-    wkc += writeSDO(EWDL_Z1, PROFILE_VELOCITY_IDX, 0x00, profile_velocity);
+    wkc += writeSDO(slave, PROFILE_VELOCITY_IDX, 0x00, profile_velocity);
 
     uint32 profile_acceleration = 200000;
-    wkc += writeSDO(EWDL_Z1, PROFILE_ACCELERATION_IDX, 0x00, profile_acceleration);
+    wkc += writeSDO(slave, PROFILE_ACCELERATION_IDX, 0x00, profile_acceleration);
 
     uint32 profile_deceleration = 200000;
-    wkc += writeSDO(EWDL_Z1, PROFILE_DECELERATION_IDX, 0x00, profile_deceleration);
+    wkc += writeSDO(slave, PROFILE_DECELERATION_IDX, 0x00, profile_deceleration);
 
     return wkc;
   }
@@ -312,39 +335,48 @@ public:
    * Velocity and torque control loops are closed in the drive. If necessary,
    * position loop is closed in the master controller. */
 
-  int init_cyclic_syncronous_velocity()
+  bool start_cyclic_syncronous_velocity()
   {
-    int8 mode_of_operation = 9;
-    wkc += writeSDO<int8>(1, MODE_OF_OPERATION_IDX, 0x00, mode_of_operation);
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      rx_pdo[slave].control_word = 0x000F;
+      rx_pdo[slave].mode_of_operation = 9;
+    }
 
-    int8 mode_of_operation_display;
-    wkc += readSDO<int8>(1, MODE_OF_OPERATION_DISPLAY_IDX, 0x00, mode_of_operation_display);
-    ROS_DEBUG("WKC: %d SDO 0x%.4x Mode of Operation Display: 0x%.2x", wkc, MODE_OF_OPERATION_DISPLAY_IDX, mode_of_operation_display);
+    return true;
+  }
 
 
-    uint16 control_word = 0x0006;
-    wkc += writeSDO<uint16>(1, CONTROL_WORD_IDX, 0x00, control_word);
+  bool stop_cyclic_syncronous_velocity()
+  {
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      rx_pdo[slave].control_word = 0x010F;
+      rx_pdo[slave].mode_of_operation = 9;
+    }
 
-    uint16 status_word;
-    wkc += readSDO<uint16>(1, STATUS_WORD_IDX, 0x00, status_word);
-    ROS_DEBUG("WKC: %d SDO 0x%.4x Status Word: 0x%.4x", wkc, STATUS_WORD_IDX, status_word);
-
-    return wkc;
+    return true;
   }
 
 
   bool start()
   {
-    rx_pdo.control_word = 0x0006;
-    rx_pdo.mode_of_operation = 9;
-    rx_pdo.target_velocity = 0;
-    rx_pdo.touch_probe_function = 0;
-    rx_pdo.physical_outputs = 0x0000;
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      rx_pdo[slave].control_word = 0x0006;
+      rx_pdo[slave].mode_of_operation = 9;
+      rx_pdo[slave].target_velocity = 0;
+      rx_pdo[slave].touch_probe_function = 0;
+      rx_pdo[slave].physical_outputs = 0x0000;
+    }
 
     update();
 
     // Safe-Operational -> Operational
-    ec_slave[1].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      ec_slave[slave].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
+    }
     ec_writestate(1);
 
     return true;
@@ -353,10 +385,18 @@ public:
 
   int update()
   {
-    rx_pdo >> ec_slave[EWDL_Z1].outputs;
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      rx_pdo[slave] >> ec_slave[slave].outputs;
+    }
+
     ec_send_processdata();
     wkc += ec_receive_processdata(EC_TIMEOUTRET3);
-    tx_pdo << ec_slave[EWDL_Z1].inputs;
+
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      tx_pdo[slave] << ec_slave[slave].inputs;
+    }
 
     return wkc;
   }

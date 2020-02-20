@@ -4,19 +4,20 @@
 
 namespace esa { namespace ewdl { namespace ethercat { namespace pdo {
 
+
 struct TxPDO0
 {
-  uint16 error_code = 0;
-  uint16 status_word = 0;
-  int8 mode_of_operation_display = 0;
-  int32 position_actual_value = 0;
-  int32 follow_error_actual_value = 0;
-  uint16 touch_probe_status = 0;
-  int32 touch_probe_pos1_pos_value = 0;
-  int32 touch_probe_pos1_neg_value = 0;
-  int32 touch_probe_pos2_pos_value = 0;
-  int32 touch_probe_pos2_neg_value = 0;
-  uint32 digital_inputs = 0;
+  uint16 error_code;
+  uint16 status_word;
+  int8 mode_of_operation_display;
+  int32 position_actual_value;
+  int32 follow_error_actual_value;
+  uint16 touch_probe_status;
+  int32 touch_probe_pos1_pos_value;
+  int32 touch_probe_pos1_neg_value;
+  int32 touch_probe_pos2_pos_value;
+  int32 touch_probe_pos2_neg_value;
+  uint32 digital_inputs;
 
   void operator<<(uint8 *data_ptr)
   {
@@ -99,18 +100,18 @@ struct TxPDO0
 
 struct TxPDO1
 {
-  uint16 error_code = 0;
-  uint16 status_word = 0;
-  int8 mode_of_operation_display = 0;
-  int32 position_actual_value = 0;
-  int32 velocity_actual_value = 0;
-  int32 follow_error_actual_value = 0;
-  uint16 touch_probe_status = 0;
-  int32 touch_probe_pos1_pos_value = 0;
-  int32 touch_probe_pos1_neg_value = 0;
-  int32 touch_probe_pos2_pos_value = 0;
-  int32 touch_probe_pos2_neg_value = 0;
-  uint32 digital_inputs = 0;
+  uint16 error_code;
+  uint16 status_word;
+  int8 mode_of_operation_display;
+  int32 position_actual_value;
+  int32 velocity_actual_value;
+  int32 follow_error_actual_value;
+  uint16 touch_probe_status;
+  int32 touch_probe_pos1_pos_value;
+  int32 touch_probe_pos1_neg_value;
+  int32 touch_probe_pos2_pos_value;
+  int32 touch_probe_pos2_neg_value;
+  uint32 digital_inputs;
 
   void operator<<(uint8 *data_ptr)
   {
@@ -199,13 +200,13 @@ struct TxPDO1
 
 struct TxPDO2
 {
-  uint16 error_code = 0;
-  uint16 status_word = 0;
-  int8 mode_of_operation_display = 0;
-  int32 position_actual_value = 0;
-  int32 velocity_actual_value = 0;
-  int32 follow_error_actual_value = 0;
-  uint32 digital_inputs = 0;
+  uint16 error_code;
+  uint16 status_word;
+  int8 mode_of_operation_display;
+  int32 position_actual_value;
+  int32 velocity_actual_value;
+  int32 follow_error_actual_value;
+  uint32 digital_inputs;
 
   void operator<<(uint8 *data_ptr)
   {
@@ -266,13 +267,13 @@ struct TxPDO2
 
 struct TxPDO3
 {
-  uint16 error_code = 0;
-  uint16 status_word = 0;
-  int8 mode_of_operation_display = 0;
-  int32 position_actual_value = 0;
-  int32 velocity_actual_value = 0;
-  int32 follow_error_actual_value = 0;
-  uint32 digital_inputs = 0;
+  uint16 error_code;
+  uint16 status_word;
+  int8 mode_of_operation_display;
+  int32 position_actual_value;
+  int32 velocity_actual_value;
+  int32 follow_error_actual_value;
+  uint32 digital_inputs;
 
   void operator<<(uint8 *data_ptr)
   {
@@ -329,6 +330,16 @@ struct TxPDO3
   // }
 
 };
+
+
+union TxPDO
+{
+  TxPDO0 _0;
+  TxPDO1 _1;
+  TxPDO2 _2;
+  TxPDO3 _3;
+};
+
 
 } } } } // namespace
 #endif
