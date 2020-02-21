@@ -94,8 +94,8 @@ private:
 
 public:
 
-  std::vector<esa::ewdl::ethercat::pdo::RxPDO1> rx_pdo;
-  std::vector<esa::ewdl::ethercat::pdo::TxPDO1> tx_pdo;
+  esa::ewdl::ethercat::pdo::RxPDO1 rx_pdo[10];
+  esa::ewdl::ethercat::pdo::TxPDO1 tx_pdo[10];
 
   Master() { }
 
@@ -169,10 +169,6 @@ public:
 
     ec_state = ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE);
     print_ec_state(0);
-
-    //
-    rx_pdo.resize(1+ec_slavecount);
-    tx_pdo.resize(1+ec_slavecount);
 
 
     for (uint16 slave = 1; slave <= ec_slavecount; slave++)
@@ -266,7 +262,7 @@ public:
   {
     for (uint16 slave = 1; slave <= ec_slavecount; slave++)
     {
-      rx_pdo[slave].control_word = 0x001F;
+      rx_pdo[slave].control_word = 0x000F;
       rx_pdo[slave].mode_of_operation = 6;
       // rx_pdo[slave].target_velocity = 0;
       // rx_pdo[slave].touch_probe_function = 0;
@@ -347,12 +343,11 @@ public:
   }
 
 
-  bool stop_cyclic_syncronous_velocity()
+  bool halt()
   {
     for (uint16 slave = 1; slave <= ec_slavecount; slave++)
     {
       rx_pdo[slave].control_word = 0x010F;
-      rx_pdo[slave].mode_of_operation = 9;
     }
 
     return true;

@@ -229,8 +229,8 @@ public:
   bool start_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
-  bool stop_motion();
-  bool stop_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+  bool halt();
+  bool halt(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
 
   void read()
@@ -243,47 +243,40 @@ public:
     {
       switch (ec_master.tx_pdo[1+i].mode_of_operation_display)
       {
-        case 6:                                       // HOMING
-          // Target Reached
-          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)
+        case 6:   // HOMING
+          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
           {
-            ROS_INFO_THROTTLE(5.0, "Homing: Target Reached.");
+            ROS_INFO_THROTTLE(1.0, "Homing: Target Reached.");
           }
-          // Homing Attained
-          if ((ec_master.tx_pdo[1+i].status_word >> 12) & 0x01)
+          if ((ec_master.tx_pdo[1+i].status_word >> 12) & 0x01)   // Homing Attained
           {
-            ROS_INFO_THROTTLE(5.0, "Homing: Homing Attained.");
+            ROS_INFO_THROTTLE(1.0, "Homing: Homing Attained.");
           }
-          // Homing Error
-          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)
+          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Homing Error
           {
-            ROS_WARN_THROTTLE(5.0, "Homing: Homing Error.");
+            ROS_WARN_THROTTLE(1.0, "Homing: Homing Error.");
           }
           break;
 
-        case 8:                                     // CYCLIC SYNCHRONOUS POSITION
-          // Target Reached
-          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)
+        case 8:   // CYCLIC SYNCHRONOUS POSITION
+          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
           {
-            ROS_INFO_THROTTLE(5.0, "Cyclic Synchronous Position: Target Reached.");
+            ROS_INFO_THROTTLE(1.0, "Cyclic Synchronous Position: Target Reached.");
           }
-          // Following Error
-          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)
+          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
           {
-            ROS_WARN_THROTTLE(5.0, "Cyclic Synchronous Position: Following Error.");
+            ROS_WARN_THROTTLE(1.0, "Cyclic Synchronous Position: Following Error.");
           }
           break;
 
-        case 9:                                     // CYCLIC SYNCHRONOUS VELOCITY
-          // Target Reached
-          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)
+        case 9:   // CYCLIC SYNCHRONOUS VELOCITY
+          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
           {
-            ROS_INFO_THROTTLE(5.0, "Cyclic Synchronous Velocity: Target Reached.");
+            ROS_INFO_THROTTLE(1.0, "Cyclic Synchronous Velocity: Target Reached.");
           }
-          // Following Error
-          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)
+          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
           {
-            ROS_WARN_THROTTLE(5.0, "Cyclic Synchronous Velocity: Following Error.");
+            ROS_WARN_THROTTLE(1.0, "Cyclic Synchronous Velocity: Following Error.");
           }
           break;
 
@@ -316,6 +309,53 @@ public:
     //
     for (int i = 0; i < n_joints; i++)
     {
+      switch (ec_master.tx_pdo[1+i].mode_of_operation_display)
+      {
+        case 6:   // HOMING
+
+          ec_master.rx_pdo[1+i].control_word = 0x001F;
+
+          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
+          {
+
+          }
+          if ((ec_master.tx_pdo[1+i].status_word >> 12) & 0x01)   // Homing Attained
+          {
+
+          }
+          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Homing Error
+          {
+
+          }
+          break;
+
+        case 8:   // CYCLIC SYNCHRONOUS POSITION
+          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
+          {
+
+          }
+          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
+          {
+
+          }
+          break;
+
+        case 9:   // CYCLIC SYNCHRONOUS VELOCITY
+          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
+          {
+
+          }
+          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
+          {
+
+          }
+          break;
+
+        default:
+
+          break;
+      }
+
       ec_master.rx_pdo[1+i].target_velocity = a_vel_cmd[i] * VELOCITY_STEP_FACTOR;
       ec_master.rx_pdo[1+i].touch_probe_function = 0;
       ec_master.rx_pdo[1+i].physical_outputs = 0x0000;

@@ -133,6 +133,8 @@ bool esa::ewdl::EWDL_HardwareInterface::start_motion()
     return false;
   }
 
+  reset_controllers = false;
+
   ROS_INFO("Motion started.");
   return true;
 }
@@ -155,30 +157,30 @@ bool esa::ewdl::EWDL_HardwareInterface::start_motion(std_srvs::TriggerRequest &r
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::stop_motion()
+bool esa::ewdl::EWDL_HardwareInterface::halt()
 {
-  if (!ec_master.stop_cyclic_syncronous_velocity())
+  if (!ec_master.halt())
   {
-    ROS_ERROR("Failed to stop motion.");
+    ROS_ERROR("Halt failed!");
     return false;
   }
 
-  ROS_INFO("Motion stopped.");
+  ROS_INFO("Halt!");
   return true;
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::stop_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::EWDL_HardwareInterface::halt(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
-  if (stop_motion())
+  if (halt())
   {
     res.success = true;
-    res.message = "Halt Motion.";
+    res.message = "Halt!";
   }
   else
   {
     res.success = false;
-    res.message = "Halt motion failed.";
+    res.message = "Halt failed!";
   }
 
   return true;

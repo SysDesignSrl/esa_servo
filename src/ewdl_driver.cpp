@@ -9,6 +9,8 @@
 #include <std_srvs/Trigger.h>
 // controller_manager
 #include <controller_manager/controller_manager.h>
+// transmission_interface
+#include <transmission_interface/transmission_interface_loader.h>
 // esa_servo
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
@@ -31,12 +33,16 @@ int main (int argc, char* argv[])
   }
 
 
-  ros::AsyncSpinner spinner(0, &callback_queue);
+  ros::AsyncSpinner spinner(2, &callback_queue);
   spinner.start();
 
 
   // Hardware Interface
   esa::ewdl::EWDL_HardwareInterface ewdl_hw(node);
+
+  // transmission_interface::RobotTransmissions robot_trans;
+  // transmission_interface::TransmissionInterfaceLoader transmission_loader(&ewdl_hw, &robot_trans);
+
 
   if (!ewdl_hw.init())
   {
@@ -54,7 +60,8 @@ int main (int argc, char* argv[])
   auto stop_homing_srv = node.advertiseService("stop_homing", &esa::ewdl::EWDL_HardwareInterface::stop_homing, &ewdl_hw);
 
   auto start_motion_srv = node.advertiseService("start_motion", &esa::ewdl::EWDL_HardwareInterface::start_motion, &ewdl_hw);
-  auto stop_motion_srv = node.advertiseService("stop_motion", &esa::ewdl::EWDL_HardwareInterface::stop_motion, &ewdl_hw);
+
+  auto halt_srv = node.advertiseService("halt", &esa::ewdl::EWDL_HardwareInterface::halt, &ewdl_hw);
 
 
   // Controller Manager
