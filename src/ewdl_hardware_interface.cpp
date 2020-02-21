@@ -1,7 +1,7 @@
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
 
-bool esa::ewdl::EWDL_HardwareInterface::start()
+bool esa::ewdl::ServoHW::start()
 {
   if (!ec_master.start())
   {
@@ -12,7 +12,7 @@ bool esa::ewdl::EWDL_HardwareInterface::start()
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::ServoHW::start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
   if (start())
   {
@@ -29,7 +29,7 @@ bool esa::ewdl::EWDL_HardwareInterface::start(std_srvs::TriggerRequest &req, std
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::set_zero_position()
+bool esa::ewdl::ServoHW::set_zero_position()
 {
   if (ec_master.set_zero_position() > 0)
   {
@@ -44,7 +44,7 @@ bool esa::ewdl::EWDL_HardwareInterface::set_zero_position()
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::ServoHW::set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
   if (set_zero_position())
   {
@@ -61,7 +61,7 @@ bool esa::ewdl::EWDL_HardwareInterface::set_zero_position(std_srvs::TriggerReque
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::start_homing()
+bool esa::ewdl::ServoHW::start_homing()
 {
   if (!ec_master.start_homing())
   {
@@ -76,7 +76,7 @@ bool esa::ewdl::EWDL_HardwareInterface::start_homing()
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::start_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::ServoHW::start_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
   if (start_homing())
   {
@@ -93,7 +93,7 @@ bool esa::ewdl::EWDL_HardwareInterface::start_homing(std_srvs::TriggerRequest &r
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::stop_homing()
+bool esa::ewdl::ServoHW::stop_homing()
 {
   if (!ec_master.stop_homing())
   {
@@ -108,7 +108,7 @@ bool esa::ewdl::EWDL_HardwareInterface::stop_homing()
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::stop_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::ServoHW::stop_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
   if (stop_homing())
   {
@@ -125,7 +125,7 @@ bool esa::ewdl::EWDL_HardwareInterface::stop_homing(std_srvs::TriggerRequest &re
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::start_motion()
+bool esa::ewdl::ServoHW::start_motion()
 {
   if (!ec_master.start_cyclic_syncronous_velocity())
   {
@@ -140,7 +140,7 @@ bool esa::ewdl::EWDL_HardwareInterface::start_motion()
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::start_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::ServoHW::start_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
   if (start_motion())
   {
@@ -157,7 +157,7 @@ bool esa::ewdl::EWDL_HardwareInterface::start_motion(std_srvs::TriggerRequest &r
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::halt()
+bool esa::ewdl::ServoHW::halt()
 {
   if (!ec_master.halt())
   {
@@ -170,7 +170,7 @@ bool esa::ewdl::EWDL_HardwareInterface::halt()
 }
 
 
-bool esa::ewdl::EWDL_HardwareInterface::halt(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::ServoHW::halt(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
   if (halt())
   {

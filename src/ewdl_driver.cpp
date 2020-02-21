@@ -7,10 +7,11 @@
 #include <ros/callback_queue.h>
 // std_srvs
 #include <std_srvs/Trigger.h>
+// transmission_interface
+#include <transmission_interface/transmission_interface.h>
+#include <transmission_interface/transmission_interface_loader.h>
 // controller_manager
 #include <controller_manager/controller_manager.h>
-// transmission_interface
-#include <transmission_interface/transmission_interface_loader.h>
 // esa_servo
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
@@ -32,53 +33,66 @@ int main (int argc, char* argv[])
     return 1;
   }
 
+  std::string urdf;
+  if (!ros::param::get("robot_description", urdf))
+  {
+    ROS_FATAL("Failed to get parameter: 'robot_description'");
+    return 1;
+  }
+
 
   ros::AsyncSpinner spinner(2, &callback_queue);
   spinner.start();
 
 
-  // Hardware Interface
-  esa::ewdl::EWDL_HardwareInterface ewdl_hw(node);
-
-  // transmission_interface::RobotTransmissions robot_trans;
-  // transmission_interface::TransmissionInterfaceLoader transmission_loader(&ewdl_hw, &robot_trans);
-
-
-  if (!ewdl_hw.init())
+  esa::ewdl::ServoHW servo_hw(node);                        // Hardware Interface
+  if (!servo_hw.init())
   {
     ROS_FATAL("Failed to initialize Hardware Interface!");
-    ewdl_hw.close();
+    servo_hw.close();
     return 1;
   }
 
+  transmission_interface::RobotTransmissions servo_tr;      // Transmission Interface
+
+  transmission_interface::TransmissionInterfaceLoader transmission_loader(&servo_hw, &servo_tr);
+  if (!transmission_loader.load(urdf))
+  {
+    ROS_FATAL("Failed to load Transmission Interface!");
+    return 1;
+  }
+
+  //
+  auto act_to_jnt_state_interface = servo_tr.get<transmission_interface::ActuatorToJointStateInterface>();
+  //
+  // auto jnt_to_act_pos_interface = servo_tr.get<transmission_interface::JointToActuatorPositionInterface>();
+  auto jnt_to_act_vel_interface = servo_tr.get<transmission_interface::JointToActuatorVelocityInterface>();
+
+
   // Advertised Services
-  auto start_srv = node.advertiseService("start", &esa::ewdl::EWDL_HardwareInterface::start, &ewdl_hw);
+  auto set_zero_position_srv = node.advertiseService("set_zero_position", &esa::ewdl::ServoHW::set_zero_position, &servo_hw);
 
-  auto set_zero_position_srv = node.advertiseService("set_zero_position", &esa::ewdl::EWDL_HardwareInterface::set_zero_position, &ewdl_hw);
+  auto start_homing_srv = node.advertiseService("start_homing", &esa::ewdl::ServoHW::start_homing, &servo_hw);
+  auto start_motion_srv = node.advertiseService("start_motion", &esa::ewdl::ServoHW::start_motion, &servo_hw);
 
-  auto start_homing_srv = node.advertiseService("start_homing", &esa::ewdl::EWDL_HardwareInterface::start_homing, &ewdl_hw);
-  auto stop_homing_srv = node.advertiseService("stop_homing", &esa::ewdl::EWDL_HardwareInterface::stop_homing, &ewdl_hw);
-
-  auto start_motion_srv = node.advertiseService("start_motion", &esa::ewdl::EWDL_HardwareInterface::start_motion, &ewdl_hw);
-
-  auto halt_srv = node.advertiseService("halt", &esa::ewdl::EWDL_HardwareInterface::halt, &ewdl_hw);
+  auto halt_srv = node.advertiseService("halt", &esa::ewdl::ServoHW::halt, &servo_hw);
 
 
   // Controller Manager
-  controller_manager::ControllerManager controller_manager(&ewdl_hw, node);
+  controller_manager::ControllerManager controller_manager(&servo_hw, node);
 
 
-  if (!ewdl_hw.start())
+  if (!servo_hw.start())
   {
     ROS_FATAL("Failed to start Hardware Interface!");
-    ewdl_hw.close();
+    servo_hw.close();
     return 1;
   }
 
-  if (!ewdl_hw.start_motion())
+  if (!servo_hw.start_motion())
   {
     ROS_FATAL("Failed to start Motion!");
-    ewdl_hw.close();
+    servo_hw.close();
     return 1;
   }
 
@@ -93,14 +107,18 @@ int main (int argc, char* argv[])
     const ros::Duration period = time - prev_time;
     ROS_DEBUG_THROTTLE(1.0, "Period: %fs", period.toSec());
 
-    ewdl_hw.read();
-    controller_manager.update(time, period, ewdl_hw.reset_controllers);
-    ewdl_hw.write();
+    servo_hw.read();
+    act_to_jnt_state_interface->propagate();
+
+    controller_manager.update(time, period, servo_hw.reset_controllers);
+
+    jnt_to_act_vel_interface->propagate();
+    servo_hw.write();
 
     prev_time = time;
   }
 
 
-  ewdl_hw.close();
+  servo_hw.close();
   return 0;
 }

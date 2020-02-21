@@ -11,16 +11,10 @@
 // controller_manager
 #include <controller_manager/controller_manager.h>
 // hardware_interface
-#include <hardware_interface/joint_state_interface.h>
-#include <hardware_interface/joint_command_interface.h>
+#include <hardware_interface/actuator_state_interface.h>
+#include <hardware_interface/actuator_command_interface.h>
 #include <hardware_interface/robot_hw.h>
-// transmission interface
-#include <transmission_interface/transmission_interface_loader.h>
-#include <transmission_interface/transmission_interface.h>
-#include <transmission_interface/transmission.h>
-#include <transmission_interface/simple_transmission.h>
 // esa_servo
-#include "esa_servo/ewdl/ethercat/common.h"
 #include "esa_servo/ewdl/ethercat/master.h"
 
 
@@ -30,7 +24,7 @@ static const double POSITION_STEP_FACTOR = 10000.0;
 static const double VELOCITY_STEP_FACTOR = 10000.0;
 
 
-class EWDL_HardwareInterface : public hardware_interface::RobotHW {
+class ServoHW : public hardware_interface::RobotHW {
 private:
 
   esa::ewdl::ethercat::Master ec_master;
@@ -77,34 +71,20 @@ protected:
   ros::NodeHandle node;
 
   double loop_hz;
+  std::vector<std::string> actuator_names;
   std::vector<std::string> joint_names;
 
-  transmission_interface::SimpleTransmission rail_trans;
-
-
-  transmission_interface::ActuatorToJointStateInterface act_to_jnt_state_interface;
-  transmission_interface::JointToActuatorPositionInterface jnt_to_act_pos_interface;
-  transmission_interface::JointToActuatorVelocityInterface jnt_to_act_vel_interface;
-
-  hardware_interface::JointStateInterface jnt_state_interface;
-  hardware_interface::PositionJointInterface jnt_pos_interface;
-  hardware_interface::VelocityJointInterface jnt_vel_interface;
+  //
+  hardware_interface::ActuatorStateInterface act_state_interface;
+  hardware_interface::PositionActuatorInterface pos_act_interface;
+  hardware_interface::VelocityActuatorInterface vel_act_interface;
 
   //
   std::vector<double> a_pos, a_pos_cmd;
   std::vector<double> a_vel, a_vel_cmd;
   std::vector<double> a_eff, a_eff_cmd;
 
-  std::vector<transmission_interface::ActuatorData> a_data, a_cmd_data;
-
   //
-  std::vector<double> j_pos, j_pos_cmd;
-  std::vector<double> j_vel, j_vel_cmd;
-  std::vector<double> j_eff, j_eff_cmd;
-
-  std::vector<transmission_interface::JointData> j_data, j_cmd_data;
-
-
   std::vector<double> joint_lower_limits;
   std::vector<double> joint_upper_limits;
 
@@ -113,7 +93,7 @@ public:
   bool reset_controllers = false;
 
 
-  EWDL_HardwareInterface(ros::NodeHandle &node) : node(node), rail_trans(3.0/0.200)
+  ServoHW(ros::NodeHandle &node) : node(node)
   {
 
   }
@@ -128,9 +108,16 @@ public:
       return false;
     }
 
+
     if (!node.getParam("/rail/hardware_interface/loop_hz", loop_hz))
     {
       ROS_ERROR("Parameter 'loop_hz' not defined!");
+      return false;
+    }
+
+    if (!node.getParam("/rail/hardware_interface/actuators", actuator_names))
+    {
+      ROS_ERROR("Parameter 'actuators' not defined!");
       return false;
     }
 
@@ -141,63 +128,27 @@ public:
     }
 
 
-    int n_joints = joint_names.size();
+    int n_actuators = actuator_names.size();
 
-    a_pos.resize(n_joints, 0.0); a_pos_cmd.resize(n_joints, 0.0);
-    a_vel.resize(n_joints, 0.0); a_vel_cmd.resize(n_joints, 0.0);
-    a_eff.resize(n_joints, 0.0); a_eff_cmd.resize(n_joints, 0.0);
+    a_pos.resize(n_actuators, 0.0); a_pos_cmd.resize(n_actuators, 0.0);
+    a_vel.resize(n_actuators, 0.0); a_vel_cmd.resize(n_actuators, 0.0);
+    a_eff.resize(n_actuators, 0.0); a_eff_cmd.resize(n_actuators, 0.0);
 
-    a_data.resize(n_joints);   a_cmd_data.resize(n_joints);
-
-    j_pos.resize(n_joints, 0.0); j_pos_cmd.resize(n_joints, 0.0);
-    j_vel.resize(n_joints, 0.0); j_vel_cmd.resize(n_joints, 0.0);
-    j_eff.resize(n_joints, 0.0); j_eff_cmd.resize(n_joints, 0.0);
-
-    j_data.resize(n_joints);   j_cmd_data.resize(n_joints);
-
-
-    for (int i = 0; i < n_joints; i++)
+    for (int i = 0; i < n_actuators; i++)
     {
-      a_data[i].position.push_back(&a_pos[i]);
-      a_data[i].velocity.push_back(&a_vel[i]);
-      a_data[i].effort.push_back(&a_eff[i]);
+      hardware_interface::ActuatorStateHandle act_state_handle(actuator_names[i], &a_pos[i], &a_vel[i], &a_eff[i]);
+      act_state_interface.registerHandle(act_state_handle);
 
-      a_cmd_data[i].position.push_back(&a_pos_cmd[i]);
-      a_cmd_data[i].velocity.push_back(&a_vel_cmd[i]);
-      a_cmd_data[i].effort.push_back(&a_eff_cmd[i]);
+      hardware_interface::ActuatorHandle pos_act_handle(act_state_handle, &a_pos_cmd[i]);
+      pos_act_interface.registerHandle(pos_act_handle);
 
-      j_data[i].position.push_back(&j_pos[i]);
-      j_data[i].velocity.push_back(&j_vel[i]);
-      j_data[i].effort.push_back(&j_eff[i]);
-
-      j_cmd_data[i].position.push_back(&j_pos_cmd[i]);
-      j_cmd_data[i].velocity.push_back(&j_vel_cmd[i]);
-      j_cmd_data[i].effort.push_back(&j_eff_cmd[i]);
-
-      // Transmission Interfaces
-      transmission_interface::ActuatorToJointStateHandle act_to_jnt_state_handle("rail_trans", &rail_trans, a_data[i], j_data[i]);
-      act_to_jnt_state_interface.registerHandle(act_to_jnt_state_handle);
-
-      transmission_interface::JointToActuatorPositionHandle jnt_to_act_pos_handle("rail_trans", &rail_trans, a_cmd_data[i], j_cmd_data[i]);
-      jnt_to_act_pos_interface.registerHandle(jnt_to_act_pos_handle);
-
-      transmission_interface::JointToActuatorVelocityHandle jnt_to_act_vel_handle("rail_trans", &rail_trans, a_cmd_data[i], j_cmd_data[i]);
-      jnt_to_act_vel_interface.registerHandle(jnt_to_act_vel_handle);
-
-      // Hardware Interfaces
-      hardware_interface::JointStateHandle jnt_state_handle(joint_names[i], &j_pos[i], &j_vel[i], &j_eff[i]);
-      jnt_state_interface.registerHandle(jnt_state_handle);
-
-      hardware_interface::JointHandle jnt_pos_handle(jnt_state_handle, &j_pos_cmd[i]);
-      jnt_pos_interface.registerHandle(jnt_pos_handle);
-
-      hardware_interface::JointHandle jnt_vel_handle(jnt_state_handle, &j_vel_cmd[i]);
-      jnt_vel_interface.registerHandle(jnt_vel_handle);
+      hardware_interface::ActuatorHandle vel_act_handle(act_state_handle, &a_vel_cmd[i]);
+      vel_act_interface.registerHandle(vel_act_handle);
     }
 
-    registerInterface(&jnt_state_interface);
-    registerInterface(&jnt_pos_interface);
-    registerInterface(&jnt_vel_interface);
+    registerInterface(&act_state_interface);
+    // registerInterface(&pos_act_interface);
+    registerInterface(&vel_act_interface);
 
     ROS_INFO("Hardware Interface initialized correctly.");
     return true;
@@ -235,11 +186,10 @@ public:
 
   void read()
   {
-    //
-    int n_joints = joint_names.size();
+    int n_actuators = actuator_names.size();
 
     //
-    for (int i = 0; i < n_joints; i++)
+    for (int i = 0; i < n_actuators; i++)
     {
       switch (ec_master.tx_pdo[1+i].mode_of_operation_display)
       {
@@ -293,21 +243,15 @@ public:
       ROS_DEBUG_THROTTLE(1.0, "Slave[%d], position_actual_value: %d", 1+i, ec_master.tx_pdo[1+i].position_actual_value);
       ROS_DEBUG_THROTTLE(1.0, "Slave[%d], digital_inputs: 0x%.8x", 1+i, ec_master.tx_pdo[1+i].digital_inputs);
     }
-
-    act_to_jnt_state_interface.propagate();
   }
 
 
   void write()
   {
-    jnt_to_act_pos_interface.propagate();
-    jnt_to_act_vel_interface.propagate();
+    int n_actuators = actuator_names.size();
 
     //
-    int n_joints = joint_names.size();
-
-    //
-    for (int i = 0; i < n_joints; i++)
+    for (int i = 0; i < n_actuators; i++)
     {
       switch (ec_master.tx_pdo[1+i].mode_of_operation_display)
       {
