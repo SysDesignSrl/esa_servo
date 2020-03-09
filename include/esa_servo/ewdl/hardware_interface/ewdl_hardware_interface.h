@@ -183,6 +183,10 @@ public:
   bool halt();
   bool halt(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
+  /* */
+  bool stop();
+  bool stop(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
 
   void read()
   {
@@ -253,6 +257,39 @@ public:
     //
     for (int i = 0; i < n_actuators; i++)
     {
+      if ((ec_master.tx_pdo[1+i].status_word >> 0) & 0x01)   // Ready to Switch On
+      {
+        ROS_INFO_ONCE("Slave[%d]: Ready to Switch On", i+1);
+      }
+      if ((ec_master.tx_pdo[1+i].status_word >> 1) & 0x01)   // Switched On
+      {
+        ROS_INFO_ONCE("Slave[%d]: Switched On", i+1);
+      }
+      if ((ec_master.tx_pdo[1+i].status_word >> 2) & 0x01)   // Operation Enabled
+      {
+        ROS_INFO_ONCE("Slave[%d]: Operation Enabled", i+1);
+      }
+      if ((ec_master.tx_pdo[1+i].status_word >> 3) & 0x01)   // Fault
+      {
+        ROS_ERROR_ONCE("Slave[%d]: Fault!!", i+1);
+      }
+      if ((ec_master.tx_pdo[1+i].status_word >> 4) & 0x01)   // Voltage Enabled
+      {
+        ROS_INFO_ONCE("Slave[%d]: Voltage Enabled", i+1);
+      }
+      if ((ec_master.tx_pdo[1+i].status_word >> 5) & 0x01)   // Quick Stop
+      {
+        ROS_INFO_ONCE("Slave[%d]: Quick Stop", i+1);
+      }
+      if ((ec_master.tx_pdo[1+i].status_word >> 6) & 0x01)   // Switch On Disabled
+      {
+        ROS_INFO_ONCE("Slave[%d]: Switch On Disabled", i+1);
+      }
+      if ((ec_master.tx_pdo[1+i].status_word >> 7) & 0x01)   // Warning
+      {
+        ROS_WARN_ONCE("Slave[%d]: Warning", i+1);
+      }
+
       switch (ec_master.tx_pdo[1+i].mode_of_operation_display)
       {
         case 6:   // HOMING
@@ -262,6 +299,10 @@ public:
           if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
           {
 
+          }
+          if ((ec_master.tx_pdo[1+i].status_word >> 11) & 0x01)   // Internal Limit Active
+          {
+            ROS_WARN_ONCE("Slave[%d]: Internal Limit Active", i+1);
           }
           if ((ec_master.tx_pdo[1+i].status_word >> 12) & 0x01)   // Homing Attained
           {
@@ -278,6 +319,10 @@ public:
           {
 
           }
+          if ((ec_master.tx_pdo[1+i].status_word >> 11) & 0x01)   // Internal Limit Active
+          {
+            ROS_WARN_ONCE("Slave[%d]: Internal Limit Active", i+1);
+          }
           if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
           {
 
@@ -288,6 +333,10 @@ public:
           if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
           {
 
+          }
+          if ((ec_master.tx_pdo[1+i].status_word >> 11) & 0x01)   // Internal Limit Active
+          {
+            ROS_WARN_ONCE("Slave[%d]: Internal Limit Active", i+1);
           }
           if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
           {

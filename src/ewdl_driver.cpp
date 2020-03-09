@@ -76,6 +76,7 @@ int main (int argc, char* argv[])
   auto start_motion_srv = node.advertiseService("start_motion", &esa::ewdl::ServoHW::start_motion, &servo_hw);
 
   auto halt_srv = node.advertiseService("halt", &esa::ewdl::ServoHW::halt, &servo_hw);
+  auto stop_srv = node.advertiseService("stop", &esa::ewdl::ServoHW::stop, &servo_hw);
 
 
   // Controller Manager

@@ -176,6 +176,8 @@ public:
       //
       fault_reset(slave);
       //
+      init_quickstop(slave);
+      //
       init_homing(slave);
       //
       init_slave(slave);
@@ -230,6 +232,16 @@ public:
   }
 
 
+  // Quick Stop
+  int init_quickstop(uint16 slave)
+  {
+    uint32 quickstop_deceleration = 3000000;
+    wkc += writeSDO<uint32>(slave, QUICKSTOP_DECELERATION_IDX, 0x00, quickstop_deceleration);
+
+    return wkc;
+  }
+
+
   // Homing Mode
   int init_homing(uint16 slave)
   {
@@ -264,9 +276,6 @@ public:
     {
       rx_pdo[slave].control_word = 0x000F;
       rx_pdo[slave].mode_of_operation = 6;
-      // rx_pdo[slave].target_velocity = 0;
-      // rx_pdo[slave].touch_probe_function = 0;
-      // rx_pdo[slave].physical_outputs = 0x0000;
     }
 
     return true;
@@ -279,9 +288,6 @@ public:
     {
       rx_pdo[slave].control_word = 0x000F;
       rx_pdo[slave].mode_of_operation = 6;
-      // rx_pdo[slave].target_velocity = 0;
-      // rx_pdo[slave].touch_probe_function = 0;
-      // rx_pdo[slave].physical_outputs = 0x0000;
     }
 
     return true;
@@ -343,17 +349,6 @@ public:
   }
 
 
-  bool halt()
-  {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
-    {
-      rx_pdo[slave].control_word = 0x010F;
-    }
-
-    return true;
-  }
-
-
   bool start()
   {
     for (uint16 slave = 1; slave <= ec_slavecount; slave++)
@@ -394,6 +389,30 @@ public:
     }
 
     return wkc;
+  }
+
+
+  // Halt
+  bool halt()
+  {
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      rx_pdo[slave].control_word = 0x010F;
+    }
+
+    return true;
+  }
+
+
+  // Quick Stop
+  bool quickstop()
+  {
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      rx_pdo[slave].control_word = 0x0003;
+    }
+
+    return true;
   }
 
 

@@ -185,3 +185,33 @@ bool esa::ewdl::ServoHW::halt(std_srvs::TriggerRequest &req, std_srvs::TriggerRe
 
   return true;
 }
+
+
+bool esa::ewdl::ServoHW::stop()
+{
+  if (!ec_master.quickstop())
+  {
+    ROS_ERROR("Stop failed!");
+    return false;
+  }
+
+  ROS_INFO("Stop!");
+  return true;
+}
+
+
+bool esa::ewdl::ServoHW::stop(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (stop())
+  {
+    res.success = true;
+    res.message = "Stop!";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Stop failed!";
+  }
+
+  return true;
+}
