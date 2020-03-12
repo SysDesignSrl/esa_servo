@@ -1,4 +1,3 @@
-<?xml version="1.0"?>
 <package format="2">
   <name>esa_servo</name>
   <version>0.0.0</version>
@@ -22,5 +21,7 @@
   <depend>soem</depend>
   <!-- System Dependencies -->
   <depend>boost</depend>
+  <!-- Execution Dependencies-->
+  <exec_depend>ethercat_grant</exec_depend>
 
 </package>

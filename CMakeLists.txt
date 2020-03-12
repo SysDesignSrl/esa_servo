@@ -111,7 +111,7 @@ catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES ethercat-driver
   CATKIN_DEPENDS roscpp std_msgs std_srvs controller_manager hardware_interface
-    transmission_interface soem
+    transmission_interface soem ethercat_grant
   DEPENDS Boost
 )
 
@@ -125,7 +125,11 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  $ENV{SNAPCRAFT_PART_INSTALL}/opt/ros/kinetic/include/soem
 )
+
+# message(STATUS "catkin_INCLUDE_DIRS=${catkin_INCLUDE_DIRS}")
+# message(STATUS "soem=$ENV{SNAPCRAFT_PART_INSTALL}/opt/ros/kinetic/include/soem")
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -172,10 +176,7 @@ target_link_libraries(step_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 # )
 
 ## Mark executables for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(TARGETS ewdl_driver RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
@@ -186,18 +187,15 @@ target_link_libraries(step_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 # )
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(
+  DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
+install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 #############
 ## Testing ##

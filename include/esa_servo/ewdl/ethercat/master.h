@@ -6,8 +6,8 @@
 // roscpp
 #include <ros/ros.h>
 #include <ros/console.h>
-// SOEM
-#include "ethercat.h"
+// soem
+#include <soem/ethercat.h>
 // Boost
 #include <boost/variant.hpp>
 // esa_servo

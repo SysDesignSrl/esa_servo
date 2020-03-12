@@ -5,8 +5,8 @@
 #include <map>
 // roscpp
 #include <ros/console.h>
-// SOEM
-#include "ethercat.h"
+// soem
+#include <soem/ethercat.h>
 
 
 namespace esa { namespace ewdl { namespace ethercat {
