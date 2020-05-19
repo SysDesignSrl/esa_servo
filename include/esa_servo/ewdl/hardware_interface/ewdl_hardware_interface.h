@@ -14,6 +14,8 @@
 #include <hardware_interface/actuator_state_interface.h>
 #include <hardware_interface/actuator_command_interface.h>
 #include <hardware_interface/robot_hw.h>
+// xmlrpc
+#include <XmlRpcValue.h>
 // esa_servo
 #include "esa_servo/ewdl/ethercat/master.h"
 
@@ -27,28 +29,34 @@ static const double VELOCITY_STEP_FACTOR = 10000.0;
 class ServoHW : public hardware_interface::RobotHW {
 private:
 
+  std::string ifname;
+  XmlRpc::XmlRpcValue slaves;
+
   esa::ewdl::ethercat::Master ec_master;
 
 
   bool init_ethercat()
   {
-    std::string ifname;
-    std::vector<std::string> slaves;
-
     if (!node.getParam("ethercat/ifname", ifname))
     {
-      ROS_FATAL("EtherCAT master network interface not defined.");
+      ROS_ERROR("EtherCAT master network interface not defined.");
       return false;
     }
 
     if (!node.getParam("ethercat/slaves", slaves))
     {
-      ROS_FATAL("EtherCAT slaves not defined.");
+      ROS_ERROR("EtherCAT slaves not defined.");
       return false;
     }
 
+    std::vector<std::string> slave_names;
+    for (int i = 0; i < slaves.size(); i++)
+    {
+      std::string device_name = slaves[i]["device_name"];
+      slave_names.push_back(device_name);
+    }
 
-    ec_master = esa::ewdl::ethercat::Master(ifname, slaves);
+    ec_master = esa::ewdl::ethercat::Master(ifname, slave_names);
 
     if (!ec_master.init())
     {
@@ -58,9 +66,38 @@ private:
 
     ROS_INFO("EtherCAT Master network interface: %s", ifname.c_str());
 
+    for (int i = 0; i < slave_names.size(); i++)
+    {
+      ROS_INFO("EtherCAT Slave[%d]: %s", i+1, slave_names[i].c_str());
+    }
+
+    return true;
+  }
+
+
+  bool config_slaves()
+  {
     for (int i = 0; i < slaves.size(); i++)
     {
-      ROS_INFO("EtherCAT Slave[%d]: %s", i+1, slaves[i].c_str());
+      int homing_method = slaves[i]["homing_method"];
+      int homing_speed_to_switch = slaves[i]["homing_speed"][0];
+      int homing_speed_to_zero = slaves[i]["homing_speed"][1];
+      int homing_acceleration = slaves[i]["homing_acceleration"];
+
+      int home_offset = slaves[i]["home_offset"];
+      int home_switch = slaves[i]["home_switch"];
+
+      int quickstop_deceleration = slaves[i]["quickstop"];
+
+      ROS_DEBUG("EtherCAT Slave[%d] Homing Method: %d", i+1, homing_method);
+      ROS_DEBUG("EtherCAT Slave[%d] Homing Speed: %d %d", i+1, homing_speed_to_switch, homing_speed_to_zero);
+      ROS_DEBUG("EtherCAT Slave[%d] Homing Acceleration: %d", i+1, homing_acceleration);
+      ROS_DEBUG("EtherCAT Slave[%d] Home Offset: %d", i+1, home_offset);
+      ROS_DEBUG("EtherCAT Slave[%d] Home Switch: 0x%.2x", i+1, home_switch);
+      ROS_DEBUG("EtherCAT Slave[%d] QuickStop Deceleration: %u", i+1, quickstop_deceleration);
+
+      ec_master.config_homing(i+1, homing_method, homing_speed_to_switch, homing_speed_to_zero, homing_acceleration, home_offset, home_switch);
+      ec_master.config_quickstop(i+1, quickstop_deceleration);
     }
 
     return true;
@@ -105,6 +142,13 @@ public:
     if (!init_ethercat())
     {
       ROS_ERROR("Failed to initialize EtherCAT communication!");
+      return false;
+    }
+
+    // configure slaves parameters
+    if (!config_slaves())
+    {
+      ROS_ERROR("Failed to configure slaves parameters!");
       return false;
     }
 

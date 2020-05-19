@@ -1,7 +1,5 @@
 <launch>
-  <!-- -->
-  <arg name="ifname"/>
-  <!-- -->
+  <arg name="ethercat_config" default="$(find esa_servo)/config/ethercat.yaml"/>
   <arg name="debug" default="false"/>
 
   <env if="$(arg debug)" name="ROSCONSOLE_CONFIG_FILE" value="$(find esa_servo)/rosconsole.conf"/>
@@ -12,8 +10,7 @@
 
   <!-- -->
   <node name="ewdl_driver" launch-prefix="ethercat_grant" pkg="esa_servo" type="ewdl_driver" output="screen">
-    <rosparam ns="ethercat" command="load" file="$(find esa_servo)/config/ethercat.yaml"/>
-    <param name="ifname" value="$(arg ifname)"/>
+    <rosparam ns="ethercat" command="load" file="$(arg ethercat_config)"/>
   </node>
 
   <!-- -->

@@ -176,10 +176,6 @@ public:
       //
       fault_reset(slave);
       //
-      init_quickstop(slave);
-      //
-      init_homing(slave);
-      //
       init_slave(slave);
     }
 
@@ -233,38 +229,31 @@ public:
 
 
   // Quick Stop
-  int init_quickstop(uint16 slave)
+  int config_quickstop(uint16 slave, uint32 quickstop_deceleration)
   {
-    uint32 quickstop_deceleration = 3000000;
     wkc += writeSDO<uint32>(slave, QUICKSTOP_DECELERATION_IDX, 0x00, quickstop_deceleration);
-
     return wkc;
   }
 
 
   // Homing Mode
-  int init_homing(uint16 slave)
+  int config_homing(uint16 slave, int8 homing_method = 0, uint32 homing_speed_to_switch = 0, uint32 homing_speed_to_zero = 0, uint32 homing_acceleration = 0, int32 home_offset = 0, uint8 home_switch = 0x08)
   {
-    int8 homing_method = 2;
     wkc += writeSDO<int8>(slave, HOMING_METHOD_IDX, 0x00, homing_method);
-    wkc += readSDO<int8>(slave, HOMING_METHOD_IDX, 0x00, homing_method);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Method: 0x%.2x", wkc, slave, HOMING_METHOD_IDX, homing_method);
 
-    uint32 homing_speed[] = { 0x02, 10000, 2000 };
-    wkc += writeSDO<uint32>(slave, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
-    wkc += writeSDO<uint32>(slave, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
-    wkc += readSDO<uint32>(slave, HOMING_SPEED_IDX, 0x01, homing_speed[1]);
-    wkc += readSDO<uint32>(slave, HOMING_SPEED_IDX, 0x02, homing_speed[2]);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Speed: %d %d", wkc, slave, HOMING_SPEED_IDX, homing_speed[1], homing_speed[2]);
-
-    uint32 homing_acceleration = 10000;
+    wkc += writeSDO<uint32>(slave, HOMING_SPEED_IDX, 0x01, homing_speed_to_switch);
+    wkc += writeSDO<uint32>(slave, HOMING_SPEED_IDX, 0x02, homing_speed_to_zero);
     wkc += writeSDO<uint32>(slave, HOMING_ACCELERATION_IDX, 0x00, homing_acceleration);
 
-    int32 home_offset = 0;
     wkc += writeSDO<int32>(slave, HOME_OFFSET_IDX, 0x00, home_offset);
-
-    uint8 home_switch = 8;
     wkc += writeSDO<uint8>(slave, HOME_SWITCH_IDX, 0x00, home_switch);
+
+    wkc += readSDO<int8>(slave, HOMING_METHOD_IDX, 0x00, homing_method);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Method: %d", wkc, slave, HOMING_METHOD_IDX, homing_method);
+
+    wkc += readSDO<uint32>(slave, HOMING_SPEED_IDX, 0x01, homing_speed_to_switch);
+    wkc += readSDO<uint32>(slave, HOMING_SPEED_IDX, 0x02, homing_speed_to_zero);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Speed: %d %d", wkc, slave, HOMING_SPEED_IDX, homing_speed_to_switch, homing_speed_to_zero);
 
     return wkc;
   }
