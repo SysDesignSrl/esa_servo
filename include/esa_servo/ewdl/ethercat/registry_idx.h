@@ -25,7 +25,6 @@ const uint16 STATUS_WORD_IDX = 0x6041;
 
 /* This object is used to set operation mode. */
 const uint16 MODE_OF_OPERATION_IDX = 0x6060;
-const uint8 MODE_OF_OPERATION_SUB = 0x00;
 
 /* This object displays current operation mode of the drive.
  * Definition of value is same as Mode of Operation (0x6060). */

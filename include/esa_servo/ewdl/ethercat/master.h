@@ -135,16 +135,16 @@ public:
 
     // Distributed Clock
     ec_configdc();
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      ec_dcsync0(slave, TRUE, 4000000U, 0);
+      ec_dcsync0(slave_idx, TRUE, 4000000U, 0);
     }
 
 
     // Pre-Operational -> Safe-Operational
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      ec_slave[slave].PO2SOconfig = slave_setup;
+      ec_slave[slave_idx].PO2SOconfig = slave_setup;
     }
 
     int used_mem = ec_config_map(&io_map);
@@ -157,74 +157,92 @@ public:
 
 
     // print slaves configuration
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      print_sm(slave, 0);     // SM0
-      print_sm(slave, 1);     // SM1
-      print_sm(slave, 2);     // SM2 (output)
-      print_sm(slave, 3);     // SM3 (input)
-      print_fmmu(slave, 0);   // FMMU0
-      print_fmmu(slave, 1);   // FMUU1
+      print_sm(slave_idx, 0);     // SM0
+      print_sm(slave_idx, 1);     // SM1
+      print_sm(slave_idx, 2);     // SM2 (output)
+      print_sm(slave_idx, 3);     // SM3 (input)
+      print_fmmu(slave_idx, 0);   // FMMU0
+      print_fmmu(slave_idx, 1);   // FMUU1
     }
 
     ec_state = ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE);
     print_ec_state(0);
 
 
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      //
-      fault_reset(slave);
-      //
-      init_slave(slave);
+      fault_reset(slave_idx);
+    }
+
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      clear_alarm(slave_idx);
+    }
+
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      init_slave(slave_idx);
     }
 
     return true;
   }
 
 
-  // Ready to Switch On
-  int init_slave(uint16 slave)
-  {
-    uint16 control_word = 0x0006;
-    wkc += writeSDO<uint16>(slave, CONTROL_WORD_IDX, 0x00, control_word);
-
-    uint16 status_word;
-    wkc += readSDO<uint16>(slave, STATUS_WORD_IDX, 0x00, status_word);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Status Word: 0x%.4x", wkc, slave, STATUS_WORD_IDX, status_word);
-
-    // Status Code
-    uint32 status_code;
-    wkc += readSDO<uint32>(slave, STATUS_CODE_IDX, 0x00, status_code);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Status Code: 0x%.4x", wkc, slave, STATUS_CODE_IDX, status_code);
-  }
-
-
   // Fault Reset
-  int fault_reset(uint16 slave)
+
+  /* When Fault happens, after the condition that caused the error has been
+   * resolved, write 80h to object 0x6040 to clear the error code in object
+   * 0x603F and object 0x200F. */
+
+  int fault_reset(uint16 slave_idx)
   {
     uint16 control_word = 0x0080;
-    wkc += writeSDO<uint16>(slave, CONTROL_WORD_IDX, 0x00, control_word);
+    wkc += writeSDO<uint16>(slave_idx, CONTROL_WORD_IDX, 0x00, control_word);
 
     uint16 error_code;
-    wkc += readSDO<uint16>(slave, ERROR_CODE_IDX, 0x00, error_code);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Error Code: 0x%.4x", wkc, slave, ERROR_CODE_IDX, error_code);
+    wkc += readSDO<uint16>(slave_idx, ERROR_CODE_IDX, 0x00, error_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Error Code: 0x%.4x", wkc, slave_idx, ERROR_CODE_IDX, error_code);
 
     return wkc;
   }
 
 
   // Clear Alarm
-  int clear_alarm(uint16 slave)
+
+  /* When Warning happens, after the condition that caused the error has been
+   * resolved, write 01h to object 0x2006 to clear the error code in object
+   * 0x603F and object 0x200F. */
+
+  int clear_alarm(uint16 slave_idx)
   {
     uint8 clear_alarm = 0x01;
-    wkc += writeSDO<uint8>(0, CLEAR_ALARM_IDX, 0x00, clear_alarm);
+    wkc += writeSDO<uint8>(slave_idx, CLEAR_ALARM_IDX, 0x00, clear_alarm);
 
     uint32 alarm_code;
-    wkc += readSDO<uint32>(0, ALARM_CODE_IDX, 0x00, alarm_code);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Alarm Code: 0x%.8x", wkc, slave, ALARM_CODE_IDX, alarm_code);
+    wkc += readSDO<uint32>(slave_idx, ALARM_CODE_IDX, 0x00, alarm_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Alarm Code: 0x%.8x", wkc, slave_idx, ALARM_CODE_IDX, alarm_code);
 
     return wkc;
+  }
+
+
+  // Ready to Switch On
+
+  int init_slave(uint16 slave_idx)
+  {
+    uint16 control_word = 0x0006;
+    wkc += writeSDO<uint16>(slave_idx, CONTROL_WORD_IDX, 0x00, control_word);
+
+    uint16 status_word;
+    wkc += readSDO<uint16>(slave_idx, STATUS_WORD_IDX, 0x00, status_word);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Status Word: 0x%.4x", wkc, slave_idx, STATUS_WORD_IDX, status_word);
+
+    // Status Code
+    uint32 status_code;
+    wkc += readSDO<uint32>(slave_idx, STATUS_CODE_IDX, 0x00, status_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Status Code: 0x%.4x", wkc, slave_idx, STATUS_CODE_IDX, status_code);
   }
 
 
@@ -256,30 +274,6 @@ public:
     ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Speed: %d %d", wkc, slave, HOMING_SPEED_IDX, homing_speed_to_switch, homing_speed_to_zero);
 
     return wkc;
-  }
-
-
-  bool start_homing()
-  {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
-    {
-      rx_pdo[slave].control_word = 0x000F;
-      rx_pdo[slave].mode_of_operation = 6;
-    }
-
-    return true;
-  }
-
-
-  bool stop_homing()
-  {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
-    {
-      rx_pdo[slave].control_word = 0x000F;
-      rx_pdo[slave].mode_of_operation = 6;
-    }
-
-    return true;
   }
 
 
@@ -318,6 +312,35 @@ public:
   }
 
 
+  bool enable_motion()
+  {
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      rx_pdo[slave_idx].control_word = 0x000F;
+    }
+
+    return true;
+  }
+
+
+  // Starting the Homing Procedure
+
+  /* Set the Homing Method required using OD entry 6098h. To start the homing
+   * procedure, bit 4 of the controlword OD entry located at dictionary address
+   * 6040h, must transition from 0 to 1. The status of the homing procedure can
+   * be monitored using the statusword OD entry 6041h. */
+
+  bool start_homing()
+  {
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      rx_pdo[slave_idx].control_word = 0x001F;
+      rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
+    }
+
+    return true;
+  }
+
   // Enable Cyclic Synchronous Velocity Mode
 
   /* In this mode the master controller sends target velocity (0x60FF) to the
@@ -330,8 +353,8 @@ public:
   {
     for (uint16 slave = 1; slave <= ec_slavecount; slave++)
     {
-      rx_pdo[slave].control_word = 0x000F;
-      rx_pdo[slave].mode_of_operation = 9;
+      // rx_pdo[slave].control_word = 0x000F;
+      rx_pdo[slave].mode_of_operation =  mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
     }
 
     return true;
@@ -340,23 +363,33 @@ public:
 
   bool start()
   {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      rx_pdo[slave].control_word = 0x0006;
-      rx_pdo[slave].mode_of_operation = 9;
-      rx_pdo[slave].target_velocity = 0;
-      rx_pdo[slave].touch_probe_function = 0;
-      rx_pdo[slave].physical_outputs = 0x0000;
+      fault_reset(slave_idx);
+    }
+
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      clear_alarm(slave_idx);
+    }
+
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      rx_pdo[slave_idx].control_word = 0x0006;
+      rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
+      rx_pdo[slave_idx].target_velocity = 0;
+      rx_pdo[slave_idx].touch_probe_function = 0;
+      rx_pdo[slave_idx].physical_outputs = 0x0000;
     }
 
     update();
 
     // Safe-Operational -> Operational
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      ec_slave[slave].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
+      ec_slave[slave_idx].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
+      ec_writestate(slave_idx);
     }
-    ec_writestate(1);
 
     return true;
   }
@@ -364,17 +397,17 @@ public:
 
   int update()
   {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      rx_pdo[slave] >> ec_slave[slave].outputs;
+      rx_pdo[slave_idx] >> ec_slave[slave_idx].outputs;
     }
 
     ec_send_processdata();
     wkc += ec_receive_processdata(EC_TIMEOUTRET3);
 
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      tx_pdo[slave] << ec_slave[slave].inputs;
+      tx_pdo[slave_idx] << ec_slave[slave_idx].inputs;
     }
 
     return wkc;
@@ -384,9 +417,9 @@ public:
   // Halt
   bool halt()
   {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      rx_pdo[slave].control_word = 0x010F;
+      rx_pdo[slave_idx].control_word |= 0x0100;
     }
 
     return true;
@@ -394,11 +427,11 @@ public:
 
 
   // Quick Stop
-  bool quickstop()
+  bool quick_stop()
   {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      rx_pdo[slave].control_word = 0x0003;
+      rx_pdo[slave_idx].control_word &= 0xFFFB;
     }
 
     return true;
@@ -408,6 +441,99 @@ public:
   void close()
   {
     ec_close();
+  }
+
+
+  void print_slave_status(const uint16 slave_idx)
+  {
+    if ((tx_pdo[slave_idx].status_word >> 0) & 0x01)   // Ready to Switch On
+    {
+      ROS_INFO("Slave[%d]: Ready to Switch On", slave_idx);
+    }
+    if ((tx_pdo[slave_idx].status_word >> 1) & 0x01)   // Switched On
+    {
+      ROS_INFO("Slave[%d]: Switched On", slave_idx);
+    }
+    if ((tx_pdo[slave_idx].status_word >> 2) & 0x01)   // Operation Enabled
+    {
+      ROS_INFO("Slave[%d]: Operation Enabled", slave_idx);
+    }
+    if ((tx_pdo[slave_idx].status_word >> 3) & 0x01)   // Fault
+    {
+      ROS_ERROR("Slave[%d]: Fault!!", slave_idx);
+    }
+    if ((tx_pdo[slave_idx].status_word >> 4) & 0x01)   // Voltage Enabled
+    {
+      ROS_INFO("Slave[%d]: Voltage Enabled", slave_idx);
+    }
+    if ((tx_pdo[slave_idx].status_word >> 5) & 0x01)   // Quick Stop
+    {
+      ROS_INFO("Slave[%d]: Quick Stop Enabled", slave_idx);
+    }
+    if ((tx_pdo[slave_idx].status_word >> 6) & 0x01)   // Switch On Disabled
+    {
+      ROS_WARN("Slave[%d]: Switch On Disabled", slave_idx);
+    }
+    if ((tx_pdo[slave_idx].status_word >> 7) & 0x01)   // Warning
+    {
+      ROS_WARN("Slave[%d]: Warning", slave_idx);
+    }
+
+    switch (tx_pdo[slave_idx].mode_of_operation_display)
+    {
+      case 6:   // HOMING
+        if ((tx_pdo[slave_idx].status_word >> 10) & 0x01)           // Target Reached
+        {
+          ROS_INFO("Slave[%d]: Target Reached.", slave_idx);
+        }
+        if ((tx_pdo[slave_idx].status_word >> 11) & 0x01)           // Internal Limit Active
+        {
+          ROS_WARN("Slave[%d]: Internal Limit Active", slave_idx);
+        }
+        if ((tx_pdo[slave_idx].status_word >> 12) & 0x01)           // Homing Attained
+        {
+          ROS_INFO("Slave[%d]: Homing Attained.", slave_idx);
+        }
+        if ((tx_pdo[slave_idx].status_word >> 13) & 0x01)           // Homing Error
+        {
+          ROS_ERROR("Slave[%d]: Homing Error.", slave_idx);
+        }
+        break;
+
+      case 8:   // CYCLIC SYNCHRONOUS POSITION
+        if ((tx_pdo[slave_idx].status_word >> 10) & 0x01)           // Target Reached
+        {
+          ROS_INFO("Slave[%d]: Target Reached.", slave_idx);
+        }
+        if ((tx_pdo[slave_idx].status_word >> 11) & 0x01)           // Internal Limit Active
+        {
+          ROS_WARN("Slave[%d]: Internal Limit Active", slave_idx);
+        }
+        if ((tx_pdo[slave_idx].status_word >> 13) & 0x01)           // Following Error
+        {
+          ROS_ERROR("Slave[%d]: Following Error.", slave_idx);
+        }
+        break;
+
+      case 9:   // CYCLIC SYNCHRONOUS VELOCITY
+        if ((tx_pdo[slave_idx].status_word >> 10) & 0x01)           // Target Reached
+        {
+          ROS_INFO("Slave[%d]: Target Reached.", slave_idx);
+        }
+        if ((tx_pdo[slave_idx].status_word >> 11) & 0x01)           // Internal Limit Active
+        {
+          ROS_WARN("Slave[%d]: Internal Limit Active", slave_idx);
+        }
+        if ((tx_pdo[slave_idx].status_word >> 13) & 0x01)           // Following Error
+        {
+          ROS_ERROR("Slave[%d]: Following Error.", slave_idx);
+        }
+        break;
+
+      default:
+
+        break;
+    }
   }
 
 };

@@ -7,10 +7,10 @@ ifname: enp7s0f1
 slaves:
   - device_name: "EWDL Servo"
     # Homing
-    homing_method: 1                    #
+    homing_method: 2                    #
     homing_speed: [ 10000, 2000 ]       # Homing Speed to switch and to return to zero.
     homing_acceleration: 10000          #
-    home_offset: 0                      #
+    home_offset: -6950                  #
     home_switch: 0x08                   #
     # QuickStop
-    quickstop: 3000000                  # This value represent the deceleration used to stop the motor whe te quickstop funciton si activated. [count/s^2]
+    quickstop: 3000000

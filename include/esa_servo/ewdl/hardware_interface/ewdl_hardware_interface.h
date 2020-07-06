@@ -3,6 +3,7 @@
 // STL
 #include <string>
 #include <vector>
+
 // roscpp
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -14,8 +15,10 @@
 #include <hardware_interface/actuator_state_interface.h>
 #include <hardware_interface/actuator_command_interface.h>
 #include <hardware_interface/robot_hw.h>
-// xmlrpc
+// xmlrpcpp
 #include <XmlRpcValue.h>
+#include <XmlRpcException.h>
+
 // esa_servo
 #include "esa_servo/ewdl/ethercat/master.h"
 
@@ -29,87 +32,15 @@ static const double VELOCITY_STEP_FACTOR = 10000.0;
 class ServoHW : public hardware_interface::RobotHW {
 private:
 
-  std::string ifname;
-  XmlRpc::XmlRpcValue slaves;
-
   esa::ewdl::ethercat::Master ec_master;
-
-
-  bool init_ethercat()
-  {
-    if (!node.getParam("ethercat/ifname", ifname))
-    {
-      ROS_ERROR("EtherCAT master network interface not defined.");
-      return false;
-    }
-
-    if (!node.getParam("ethercat/slaves", slaves))
-    {
-      ROS_ERROR("EtherCAT slaves not defined.");
-      return false;
-    }
-
-    std::vector<std::string> slave_names;
-    for (int i = 0; i < slaves.size(); i++)
-    {
-      std::string device_name = slaves[i]["device_name"];
-      slave_names.push_back(device_name);
-    }
-
-    ec_master = esa::ewdl::ethercat::Master(ifname, slave_names);
-
-    if (!ec_master.init())
-    {
-      ROS_FATAL("Failed to initialize EtherCAT master.");
-      return false;
-    }
-
-    ROS_INFO("EtherCAT Master network interface: %s", ifname.c_str());
-
-    for (int i = 0; i < slave_names.size(); i++)
-    {
-      ROS_INFO("EtherCAT Slave[%d]: %s", i+1, slave_names[i].c_str());
-    }
-
-    return true;
-  }
-
-
-  bool config_slaves()
-  {
-    for (int i = 0; i < slaves.size(); i++)
-    {
-      int homing_method = slaves[i]["homing_method"];
-      int homing_speed_to_switch = slaves[i]["homing_speed"][0];
-      int homing_speed_to_zero = slaves[i]["homing_speed"][1];
-      int homing_acceleration = slaves[i]["homing_acceleration"];
-
-      int home_offset = slaves[i]["home_offset"];
-      int home_switch = slaves[i]["home_switch"];
-
-      int quickstop_deceleration = slaves[i]["quickstop"];
-
-      ROS_DEBUG("EtherCAT Slave[%d] Homing Method: %d", i+1, homing_method);
-      ROS_DEBUG("EtherCAT Slave[%d] Homing Speed: %d %d", i+1, homing_speed_to_switch, homing_speed_to_zero);
-      ROS_DEBUG("EtherCAT Slave[%d] Homing Acceleration: %d", i+1, homing_acceleration);
-      ROS_DEBUG("EtherCAT Slave[%d] Home Offset: %d", i+1, home_offset);
-      ROS_DEBUG("EtherCAT Slave[%d] Home Switch: 0x%.2x", i+1, home_switch);
-      ROS_DEBUG("EtherCAT Slave[%d] QuickStop Deceleration: %u", i+1, quickstop_deceleration);
-
-      ec_master.config_homing(i+1, homing_method, homing_speed_to_switch, homing_speed_to_zero, homing_acceleration, home_offset, home_switch);
-      ec_master.config_quickstop(i+1, quickstop_deceleration);
-    }
-
-    return true;
-  }
 
 protected:
 
   ros::NodeHandle node;
 
   double loop_hz;
-  std::vector<std::string> actuator_names;
-  std::vector<std::string> joint_names;
+  std::vector<std::string> joints;
+  std::vector<std::string> actuators;
 
   //
   hardware_interface::ActuatorStateInterface act_state_interface;
@@ -136,43 +67,125 @@ public:
   }
 
 
-  bool init()
+  bool init_ethercat(const std::string &ifname, const std::vector<std::string> &slaves)
   {
-    // initialize ethercat interface
-    if (!init_ethercat())
+    ec_master = esa::ewdl::ethercat::Master(ifname, slaves);
+
+    if (ec_master.init())
     {
-      ROS_ERROR("Failed to initialize EtherCAT communication!");
+      ROS_INFO("EtherCAT Master interface: %s", ifname.c_str());
+    }
+    else
+    {
+      ROS_FATAL("Failed to initialize EtherCAT master.");
       return false;
     }
 
-    // configure slaves parameters
-    if (!config_slaves())
+    for (int i = 0; i < slaves.size(); i++)
     {
-      ROS_ERROR("Failed to configure slaves parameters!");
+      ROS_INFO("EtherCAT Slave[%d]: %s", 1+i, slaves[i].c_str());
+    }
+
+    return true;
+  }
+
+
+  bool config_slaves(XmlRpc::XmlRpcValue &slaves_param)
+  {
+    for (int i = 0; i < slaves_param.size(); i++)
+    {
+      try
+      {
+        int homing_method = slaves_param[i]["homing_method"];
+        int homing_speed_to_switch = slaves_param[i]["homing_speed"][0];
+        int homing_speed_to_zero = slaves_param[i]["homing_speed"][1];
+        int homing_acceleration = slaves_param[i]["homing_acceleration"];
+
+        int home_offset = slaves_param[i]["home_offset"];
+        int home_switch = slaves_param[i]["home_switch"];
+
+        int quickstop_deceleration = slaves_param[i]["quickstop"];
+
+        const uint16 slave_idx = 1 + i;
+        ROS_DEBUG("EtherCAT Slave[%d] Homing Method: %d", slave_idx, homing_method);
+        ROS_DEBUG("EtherCAT Slave[%d] Homing Speed: %d %d", slave_idx, homing_speed_to_switch, homing_speed_to_zero);
+        ROS_DEBUG("EtherCAT Slave[%d] Homing Acceleration: %d", slave_idx, homing_acceleration);
+        ROS_DEBUG("EtherCAT Slave[%d] Home Offset: %d", slave_idx, home_offset);
+        ROS_DEBUG("EtherCAT Slave[%d] Home Switch: 0x%.2x", slave_idx, home_switch);
+        ROS_DEBUG("EtherCAT Slave[%d] QuickStop Deceleration: %u", slave_idx, quickstop_deceleration);
+
+        ec_master.config_homing(slave_idx, homing_method, homing_speed_to_switch, homing_speed_to_zero, homing_acceleration, home_offset, home_switch);
+        ec_master.config_quickstop(slave_idx, quickstop_deceleration);
+      }
+      catch (const XmlRpc::XmlRpcException &ex)
+      {
+        auto code = ex.getCode();
+        auto message = ex.getMessage();
+        ROS_ERROR("Error Code: %d, %s", code, message.c_str());
+      }
+    }
+
+    return true;
+  }
+
+
+  bool init(double loop_hz, const std::vector<std::string> &joints, const std::vector<std::string> &actuators)
+  {
+    this->loop_hz = loop_hz;
+    this->joints = joints;
+    this->actuators = actuators;
+
+    // EtherCAT
+    std::string ifname;
+    if (!node.getParam("ethercat/ifname", ifname))
+    {
+      std::string param_name = node.resolveName("ethercat/ifname");
+      ROS_ERROR("Failed to get '%s' parameter.", param_name.c_str());
+      return false;
+    }
+
+    XmlRpc::XmlRpcValue slaves_param;
+    if (!node.getParam("ethercat/slaves", slaves_param))
+    {
+      std::string param_name = node.resolveName("ethercat/slaves");
+      ROS_ERROR("Failed to get '%s' parameter.", param_name.c_str());
+      return false;
+    }
+
+    std::vector<std::string> slaves;
+    for (int i = 0; i < slaves_param.size(); i++)
+    {
+      try
+      {
+        std::string device_name = slaves_param[i]["device_name"];
+        slaves.push_back(device_name);
+      }
+      catch (const XmlRpc::XmlRpcException &ex)
+      {
+        auto code = ex.getCode();
+        auto message = ex.getMessage();
+        ROS_ERROR("Error Code: %d, %s", code, message.c_str());
+      }
+    }
+
+
+    if (!init_ethercat(ifname, slaves))
+    {
+      ROS_FATAL("Failed to initialize Hardware Interface!");
+      close();
+      return false;
+    }
+
+    if (!config_slaves(slaves_param))
+    {
+      ROS_FATAL("Failed to initialize Hardware Interface!");
+      close();
       return false;
     }
 
 
-    if (!node.getParam("/rail/hardware_interface/loop_hz", loop_hz))
-    {
-      ROS_ERROR("Parameter 'loop_hz' not defined!");
-      return false;
-    }
-
-    if (!node.getParam("/rail/hardware_interface/actuators", actuator_names))
-    {
-      ROS_ERROR("Parameter 'actuators' not defined!");
-      return false;
-    }
-
-    if (!node.getParam("/rail/hardware_interface/joints", joint_names))
-    {
-      ROS_ERROR("Parameter 'joints' not defined!");
-      return false;
-    }
-
-
-    int n_actuators = actuator_names.size();
+    // Hardware Interface
+    const int n_actuators = actuators.size();
 
     a_pos.resize(n_actuators, 0.0); a_pos_cmd.resize(n_actuators, 0.0);
     a_vel.resize(n_actuators, 0.0); a_vel_cmd.resize(n_actuators, 0.0);
@@ -180,7 +193,7 @@ public:
 
     for (int i = 0; i < n_actuators; i++)
     {
-      hardware_interface::ActuatorStateHandle act_state_handle(actuator_names[i], &a_pos[i], &a_vel[i], &a_eff[i]);
+      hardware_interface::ActuatorStateHandle act_state_handle(actuators[i], &a_pos[i], &a_vel[i], &a_eff[i]);
       act_state_interface.registerHandle(act_state_handle);
 
       hardware_interface::ActuatorHandle pos_act_handle(act_state_handle, &a_pos_cmd[i]);
@@ -204,20 +217,12 @@ public:
   bool start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
-  // bool stop();
-  // bool stop(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
-
-  /* */
-  bool set_zero_position();
-  bool set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+  bool enable_motion();
+  bool enable_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
   bool start_homing();
   bool start_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
-
-  /* */
-  bool stop_homing();
-  bool stop_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /**/
   bool start_motion();
@@ -228,176 +233,46 @@ public:
   bool halt(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
-  bool stop();
-  bool stop(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+  bool quick_stop();
+  bool quick_stop(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
+  /* */
+  bool set_zero_position();
+  bool set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
 
-  void read()
+  void read(const ros::Time &time, const ros::Duration &period)
   {
-    int n_actuators = actuator_names.size();
+    const int n_actuators = actuators.size();
 
-    //
     for (int i = 0; i < n_actuators; i++)
     {
-      switch (ec_master.tx_pdo[1+i].mode_of_operation_display)
-      {
-        case 6:   // HOMING
-          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
-          {
-            ROS_INFO_THROTTLE(1.0, "Homing: Target Reached.");
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 12) & 0x01)   // Homing Attained
-          {
-            ROS_INFO_THROTTLE(1.0, "Homing: Homing Attained.");
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Homing Error
-          {
-            ROS_WARN_THROTTLE(1.0, "Homing: Homing Error.");
-          }
-          break;
+      const uint16 slave_idx = 1 + i;
 
-        case 8:   // CYCLIC SYNCHRONOUS POSITION
-          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
-          {
-            ROS_INFO_THROTTLE(1.0, "Cyclic Synchronous Position: Target Reached.");
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
-          {
-            ROS_WARN_THROTTLE(1.0, "Cyclic Synchronous Position: Following Error.");
-          }
-          break;
+      a_pos[i] = ec_master.tx_pdo[slave_idx].position_actual_value / POSITION_STEP_FACTOR;
+      a_vel[i] = ec_master.tx_pdo[slave_idx].velocity_actual_value / VELOCITY_STEP_FACTOR;
 
-        case 9:   // CYCLIC SYNCHRONOUS VELOCITY
-          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
-          {
-            ROS_INFO_THROTTLE(1.0, "Cyclic Synchronous Velocity: Target Reached.");
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
-          {
-            ROS_WARN_THROTTLE(1.0, "Cyclic Synchronous Velocity: Following Error.");
-          }
-          break;
-
-        default:
-
-          break;
-      }
-
-      a_pos[i] = ec_master.tx_pdo[1+i].position_actual_value / POSITION_STEP_FACTOR;
-      a_vel[i] = ec_master.tx_pdo[1+i].velocity_actual_value / VELOCITY_STEP_FACTOR;
-
-      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], status_word: 0x%.4x", 1+i, ec_master.tx_pdo[1+i].status_word);
-      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], mode_of_operation display: %d", 1+i, ec_master.tx_pdo[1+i].mode_of_operation_display);
-      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], position_actual_value: %d", 1+i, ec_master.tx_pdo[1+i].position_actual_value);
-      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], digital_inputs: 0x%.8x", 1+i, ec_master.tx_pdo[1+i].digital_inputs);
+      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], status_word: 0x%.4x", slave_idx, ec_master.tx_pdo[slave_idx].status_word);
+      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], mode_of_operation display: %d", slave_idx, ec_master.tx_pdo[slave_idx].mode_of_operation_display);
+      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], position_actual_value: %d", slave_idx, ec_master.tx_pdo[slave_idx].position_actual_value);
+      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], digital_inputs: 0x%.8x", slave_idx, ec_master.tx_pdo[slave_idx].digital_inputs);
     }
   }
 
 
-  void write()
+  void write(const ros::Time &time, const ros::Duration &period)
   {
-    int n_actuators = actuator_names.size();
+    const int n_actuators = actuators.size();
 
-    //
     for (int i = 0; i < n_actuators; i++)
     {
-      if ((ec_master.tx_pdo[1+i].status_word >> 0) & 0x01)   // Ready to Switch On
-      {
-        ROS_INFO_ONCE("Slave[%d]: Ready to Switch On", i+1);
-      }
-      if ((ec_master.tx_pdo[1+i].status_word >> 1) & 0x01)   // Switched On
-      {
-        ROS_INFO_ONCE("Slave[%d]: Switched On", i+1);
-      }
-      if ((ec_master.tx_pdo[1+i].status_word >> 2) & 0x01)   // Operation Enabled
-      {
-        ROS_INFO_ONCE("Slave[%d]: Operation Enabled", i+1);
-      }
-      if ((ec_master.tx_pdo[1+i].status_word >> 3) & 0x01)   // Fault
-      {
-        ROS_ERROR_ONCE("Slave[%d]: Fault!!", i+1);
-      }
-      if ((ec_master.tx_pdo[1+i].status_word >> 4) & 0x01)   // Voltage Enabled
-      {
-        ROS_INFO_ONCE("Slave[%d]: Voltage Enabled", i+1);
-      }
-      if ((ec_master.tx_pdo[1+i].status_word >> 5) & 0x01)   // Quick Stop
-      {
-        ROS_INFO_ONCE("Slave[%d]: Quick Stop", i+1);
-      }
-      if ((ec_master.tx_pdo[1+i].status_word >> 6) & 0x01)   // Switch On Disabled
-      {
-        ROS_INFO_ONCE("Slave[%d]: Switch On Disabled", i+1);
-      }
-      if ((ec_master.tx_pdo[1+i].status_word >> 7) & 0x01)   // Warning
-      {
-        ROS_WARN_ONCE("Slave[%d]: Warning", i+1);
-      }
+      const uint16 slave_idx = 1 + i;
 
-      switch (ec_master.tx_pdo[1+i].mode_of_operation_display)
-      {
-        case 6:   // HOMING
+      ec_master.rx_pdo[slave_idx].target_velocity = a_vel_cmd[i] * VELOCITY_STEP_FACTOR;
+      ec_master.rx_pdo[slave_idx].touch_probe_function = 0;
+      ec_master.rx_pdo[slave_idx].physical_outputs = 0x0000;
 
-          ec_master.rx_pdo[1+i].control_word = 0x001F;
-
-          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
-          {
-
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 11) & 0x01)   // Internal Limit Active
-          {
-            ROS_WARN_ONCE("Slave[%d]: Internal Limit Active", i+1);
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 12) & 0x01)   // Homing Attained
-          {
-
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Homing Error
-          {
-
-          }
-          break;
-
-        case 8:   // CYCLIC SYNCHRONOUS POSITION
-          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
-          {
-
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 11) & 0x01)   // Internal Limit Active
-          {
-            ROS_WARN_ONCE("Slave[%d]: Internal Limit Active", i+1);
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
-          {
-
-          }
-          break;
-
-        case 9:   // CYCLIC SYNCHRONOUS VELOCITY
-          if ((ec_master.tx_pdo[1+i].status_word >> 10) & 0x01)   // Target Reached
-          {
-
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 11) & 0x01)   // Internal Limit Active
-          {
-            ROS_WARN_ONCE("Slave[%d]: Internal Limit Active", i+1);
-          }
-          if ((ec_master.tx_pdo[1+i].status_word >> 13) & 0x01)   // Following Error
-          {
-
-          }
-          break;
-
-        default:
-
-          break;
-      }
-
-      ec_master.rx_pdo[1+i].target_velocity = a_vel_cmd[i] * VELOCITY_STEP_FACTOR;
-      ec_master.rx_pdo[1+i].touch_probe_function = 0;
-      ec_master.rx_pdo[1+i].physical_outputs = 0x0000;
-
-      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], control_word: 0x%.4x", 1+i, ec_master.rx_pdo[1+i].control_word);
+      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
     }
 
     ec_master.update();

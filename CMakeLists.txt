@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   hardware_interface
   transmission_interface
   soem
+  xmlrpcpp
 )
 
 ## System dependencies are found with CMake's conventions
@@ -110,8 +111,16 @@ find_package(Boost REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES ethercat-driver
-  CATKIN_DEPENDS roscpp std_msgs std_srvs controller_manager hardware_interface
-    transmission_interface soem ethercat_grant
+  CATKIN_DEPENDS
+    roscpp
+    std_msgs
+    std_srvs
+    controller_manager
+    hardware_interface
+    transmission_interface
+    soem
+    xmlrpcpp
+    ethercat_grant
   DEPENDS Boost
 )
 
