@@ -277,23 +277,6 @@ public:
   }
 
 
-  int set_zero_position()
-  {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
-    {
-      uint8 zero_position;
-
-      zero_position = 0x01;
-      wkc += writeSDO<uint8>(slave, ZERO_POSITION_IDX, 0x00, zero_position);
-
-      zero_position = 0x00;
-      wkc += writeSDO<uint8>(slave, ZERO_POSITION_IDX, 0x00, zero_position);
-    }
-
-    return wkc;
-  }
-
-
   int init_profile(uint16 slave)
   {
     int32 target_position = 0;
@@ -309,6 +292,40 @@ public:
     wkc += writeSDO(slave, PROFILE_DECELERATION_IDX, 0x00, profile_deceleration);
 
     return wkc;
+  }
+
+
+  bool start()
+  {
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      fault_reset(slave_idx);
+    }
+
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      clear_alarm(slave_idx);
+    }
+
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      rx_pdo[slave_idx].control_word = 0x0006;
+      rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
+      rx_pdo[slave_idx].target_velocity = 0;
+      rx_pdo[slave_idx].touch_probe_function = 0;
+      rx_pdo[slave_idx].physical_outputs = 0x0000;
+    }
+
+    update();
+
+    // Safe-Operational -> Operational
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      ec_slave[slave_idx].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
+      ec_writestate(slave_idx);
+    }
+
+    return true;
   }
 
 
@@ -351,44 +368,10 @@ public:
 
   bool start_cyclic_syncronous_velocity()
   {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
-    {
-      // rx_pdo[slave].control_word = 0x000F;
-      rx_pdo[slave].mode_of_operation =  mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
-    }
-
-    return true;
-  }
-
-
-  bool start()
-  {
     for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      fault_reset(slave_idx);
-    }
-
-    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
-    {
-      clear_alarm(slave_idx);
-    }
-
-    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
-    {
-      rx_pdo[slave_idx].control_word = 0x0006;
-      rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
-      rx_pdo[slave_idx].target_velocity = 0;
-      rx_pdo[slave_idx].touch_probe_function = 0;
-      rx_pdo[slave_idx].physical_outputs = 0x0000;
-    }
-
-    update();
-
-    // Safe-Operational -> Operational
-    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
-    {
-      ec_slave[slave_idx].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
-      ec_writestate(slave_idx);
+      rx_pdo[slave_idx].control_word = 0x000F;
+      rx_pdo[slave_idx].mode_of_operation =  mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY;
     }
 
     return true;
@@ -431,7 +414,7 @@ public:
   {
     for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      rx_pdo[slave_idx].control_word &= 0xFFFB;
+      rx_pdo[slave_idx].control_word &= 0b1111111111111011;
     }
 
     return true;
@@ -441,6 +424,23 @@ public:
   void close()
   {
     ec_close();
+  }
+
+
+  int set_zero_position()
+  {
+    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    {
+      uint8 zero_position;
+
+      zero_position = 0x01;
+      wkc += writeSDO<uint8>(slave, ZERO_POSITION_IDX, 0x00, zero_position);
+
+      zero_position = 0x00;
+      wkc += writeSDO<uint8>(slave, ZERO_POSITION_IDX, 0x00, zero_position);
+    }
+
+    return wkc;
   }
 
 
