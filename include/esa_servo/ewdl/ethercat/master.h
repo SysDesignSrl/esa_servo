@@ -255,41 +255,41 @@ public:
 
 
   // Homing Mode
-  int config_homing(uint16 slave, int8 homing_method = 0, uint32 homing_speed_to_switch = 0, uint32 homing_speed_to_zero = 0, uint32 homing_acceleration = 0, int32 home_offset = 0, uint8 home_switch = 0x08)
+  int config_homing(uint16 slave_idx, int8 homing_method = 0, uint32 homing_speed_to_switch = 0, uint32 homing_speed_to_zero = 0, uint32 homing_acceleration = 0, int32 home_offset = 0, uint8 home_switch = 0x08)
   {
-    wkc += writeSDO<int8>(slave, HOMING_METHOD_IDX, 0x00, homing_method);
+    wkc += writeSDO<int8>(slave_idx, HOMING_METHOD_IDX, 0x00, homing_method);
 
-    wkc += writeSDO<uint32>(slave, HOMING_SPEED_IDX, 0x01, homing_speed_to_switch);
-    wkc += writeSDO<uint32>(slave, HOMING_SPEED_IDX, 0x02, homing_speed_to_zero);
-    wkc += writeSDO<uint32>(slave, HOMING_ACCELERATION_IDX, 0x00, homing_acceleration);
+    wkc += readSDO<int8>(slave_idx, HOMING_METHOD_IDX, 0x00, homing_method);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Method: %d", wkc, slave_idx, HOMING_METHOD_IDX, homing_method);
 
-    wkc += writeSDO<int32>(slave, HOME_OFFSET_IDX, 0x00, home_offset);
-    wkc += writeSDO<uint8>(slave, HOME_SWITCH_IDX, 0x00, home_switch);
+    wkc += writeSDO<uint32>(slave_idx, HOMING_SPEED_IDX, 0x01, homing_speed_to_switch);
+    wkc += writeSDO<uint32>(slave_idx, HOMING_SPEED_IDX, 0x02, homing_speed_to_zero);
+    wkc += writeSDO<uint32>(slave_idx, HOMING_ACCELERATION_IDX, 0x00, homing_acceleration);
 
-    wkc += readSDO<int8>(slave, HOMING_METHOD_IDX, 0x00, homing_method);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Method: %d", wkc, slave, HOMING_METHOD_IDX, homing_method);
+    wkc += readSDO<uint32>(slave_idx, HOMING_SPEED_IDX, 0x01, homing_speed_to_switch);
+    wkc += readSDO<uint32>(slave_idx, HOMING_SPEED_IDX, 0x02, homing_speed_to_zero);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Speed: %d %d", wkc, slave_idx, HOMING_SPEED_IDX, homing_speed_to_switch, homing_speed_to_zero);
 
-    wkc += readSDO<uint32>(slave, HOMING_SPEED_IDX, 0x01, homing_speed_to_switch);
-    wkc += readSDO<uint32>(slave, HOMING_SPEED_IDX, 0x02, homing_speed_to_zero);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Speed: %d %d", wkc, slave, HOMING_SPEED_IDX, homing_speed_to_switch, homing_speed_to_zero);
+    wkc += writeSDO<int32>(slave_idx, HOME_OFFSET_IDX, 0x00, home_offset);
+    wkc += writeSDO<uint8>(slave_idx, HOME_SWITCH_IDX, 0x00, home_switch);
 
     return wkc;
   }
 
 
-  int init_profile(uint16 slave)
+  int init_profile(uint16 slave_idx)
   {
     int32 target_position = 0;
-    wkc += writeSDO(slave, TARGET_POSITION_IDX, 0x00, target_position);
+    wkc += writeSDO(slave_idx, TARGET_POSITION_IDX, 0x00, target_position);
 
     uint32 profile_velocity = 200000;
-    wkc += writeSDO(slave, PROFILE_VELOCITY_IDX, 0x00, profile_velocity);
+    wkc += writeSDO(slave_idx, PROFILE_VELOCITY_IDX, 0x00, profile_velocity);
 
     uint32 profile_acceleration = 200000;
-    wkc += writeSDO(slave, PROFILE_ACCELERATION_IDX, 0x00, profile_acceleration);
+    wkc += writeSDO(slave_idx, PROFILE_ACCELERATION_IDX, 0x00, profile_acceleration);
 
     uint32 profile_deceleration = 200000;
-    wkc += writeSDO(slave, PROFILE_DECELERATION_IDX, 0x00, profile_deceleration);
+    wkc += writeSDO(slave_idx, PROFILE_DECELERATION_IDX, 0x00, profile_deceleration);
 
     return wkc;
   }

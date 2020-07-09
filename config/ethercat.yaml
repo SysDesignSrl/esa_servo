@@ -13,4 +13,4 @@ slaves:
     home_offset: -6950                  #
     home_switch: 0x08                   #
     # QuickStop
-    quickstop: 3000000
+    quickstop_deceleration: 3000000

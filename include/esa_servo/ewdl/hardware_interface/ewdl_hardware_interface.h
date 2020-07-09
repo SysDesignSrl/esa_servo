@@ -104,7 +104,7 @@ public:
         int home_offset = slaves_param[i]["home_offset"];
         int home_switch = slaves_param[i]["home_switch"];
 
-        int quickstop_deceleration = slaves_param[i]["quickstop"];
+        int quickstop_deceleration = slaves_param[i]["quickstop_deceleration"];
 
         const uint16 slave_idx = 1 + i;
         ROS_DEBUG("EtherCAT Slave[%d] Homing Method: %d", slave_idx, homing_method);
