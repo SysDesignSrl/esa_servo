@@ -17,6 +17,7 @@ rail:
       joints:
         - rail_joint
       constraints:
+        goal_time: 2.0
         rail_joint: { goal: 0.01, trajectory: 0.02 }
         stopped_velocity_tolerance: 0.05
       gains:
