@@ -13,11 +13,11 @@ rail:
         pid: { p: 2.0, i: 0.0, d: 0.0, i_clamp: 0.0 }
     rail_controller:
       type: velocity_controllers/JointTrajectoryController
-      action_monitor_rate: 250
+      action_monitor_rate: 1000
       joints:
         - rail_joint
       constraints:
-        goal_time: 2.0
+        goal_time: 1.0
         rail_joint: { goal: 0.01, trajectory: 0.02 }
         stopped_velocity_tolerance: 0.05
       gains:
