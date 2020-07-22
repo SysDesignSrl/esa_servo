@@ -90,8 +90,8 @@ int main (int argc, char* argv[])
   }
 
   auto act_to_jnt_state_interface = servo_tr.get<transmission_interface::ActuatorToJointStateInterface>();
-  // auto jnt_to_act_pos_interface = servo_tr.get<transmission_interface::JointToActuatorPositionInterface>();
-  auto jnt_to_act_vel_interface = servo_tr.get<transmission_interface::JointToActuatorVelocityInterface>();
+  auto jnt_to_act_pos_interface = servo_tr.get<transmission_interface::JointToActuatorPositionInterface>();
+  // auto jnt_to_act_vel_interface = servo_tr.get<transmission_interface::JointToActuatorVelocityInterface>();
 
 
   // Advertised Services
@@ -135,7 +135,7 @@ int main (int argc, char* argv[])
 
     controller_manager.update(time, period, servo_hw.reset_controllers);
 
-    jnt_to_act_vel_interface->propagate();
+    jnt_to_act_pos_interface->propagate();
     servo_hw.write(time, period);
 
     prev_time = time;

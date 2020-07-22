@@ -101,7 +101,7 @@ bool esa::ewdl::ServoHW::start_homing(std_srvs::TriggerRequest &req, std_srvs::T
 
 bool esa::ewdl::ServoHW::start_motion()
 {
-  if (ec_master.start_cyclic_syncronous_velocity())
+  if (ec_master.start_cyclic_syncronous_position())
   {
     reset_controllers = false;
 

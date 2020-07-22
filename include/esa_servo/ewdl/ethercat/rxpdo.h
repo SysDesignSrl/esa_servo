@@ -5,7 +5,7 @@
 namespace esa { namespace ewdl { namespace ethercat { namespace pdo {
 
 
-struct RxPDO0
+struct RxPDO1
 {
   uint16 control_word;
   int8 mode_of_operation;
@@ -53,7 +53,7 @@ struct RxPDO0
 };
 
 
-struct RxPDO1
+struct RxPDO2
 {
   uint16 control_word;
   int8 mode_of_operation;
@@ -101,7 +101,7 @@ struct RxPDO1
 };
 
 
-struct RxPDO2
+struct RxPDO3
 {
   uint16 control_word;
   int8 mode_of_operation;
@@ -151,7 +151,7 @@ struct RxPDO2
 };
 
 
-struct RxPDO3
+struct RxPDO4
 {
   uint16 control_word;
   int8 mode_of_operation;
@@ -195,13 +195,13 @@ struct RxPDO3
 };
 
 
-union RxPDO
-{
-  RxPDO0 _0;
-  RxPDO1 _1;
-  RxPDO2 _2;
-  RxPDO3 _3;
-};
+// union RxPDO
+// {
+//   RxPDO1 _0;
+//   RxPDO2 _1;
+//   RxPDO3 _2;
+//   RxPDO4 _3;
+// };
 
 
 } } } } // namespace

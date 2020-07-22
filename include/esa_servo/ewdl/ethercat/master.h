@@ -26,8 +26,8 @@ inline int slave_setup(uint16 slave)
   int wkc = 0;
 
   // PDO mapping
-  uint16 sdo_1c12[] = { 0x0001, 0x1601 };     // RxPDO1
-  uint16 sdo_1c13[] = { 0x0001, 0x1a01 };     // TxPDO1
+  uint16 sdo_1c12[] = { 0x0001, 0x1600 };     // RxPDO1
+  uint16 sdo_1c13[] = { 0x0001, 0x1a00 };     // TxPDO1
   wkc += writeSDO<uint16>(slave, 0x1c12, 0x00, sdo_1c12);
   wkc += writeSDO<uint16>(slave, 0x1c13, 0x00, sdo_1c13);
 
@@ -311,7 +311,7 @@ public:
     {
       rx_pdo[slave_idx].control_word = 0x0006;
       rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
-      rx_pdo[slave_idx].target_velocity = 0;
+      rx_pdo[slave_idx].target_position = 0;
       rx_pdo[slave_idx].touch_probe_function = 0;
       rx_pdo[slave_idx].physical_outputs = 0x0000;
     }
@@ -353,6 +353,25 @@ public:
     {
       rx_pdo[slave_idx].control_word = 0x001F;
       rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
+    }
+
+    return true;
+  }
+
+  // Enable Cyclic Synchronous Position Mode
+
+  /* In this mode the master controller generates a trajectory and sends target
+   * position (0x607A) to the drive at every PDO update cycle. The primary feedback
+   * from the drive is the actual motor position and optionally, actual motor
+   * velocity and torque. Position, velocity, and torque control loops are all
+   closed in the drive which acts as a follower for the position commands. */
+
+  bool start_cyclic_syncronous_position()
+  {
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      rx_pdo[slave_idx].control_word = 0x000F;
+      rx_pdo[slave_idx].mode_of_operation =  mode_of_operation_t::CYCLIC_SYNCHRONOUS_POSITION;
     }
 
     return true;
