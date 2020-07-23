@@ -203,7 +203,7 @@ public:
 
     uint16 error_code;
     wkc += readSDO<uint16>(slave_idx, ERROR_CODE_IDX, 0x00, error_code);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Error Code: 0x%.4x", wkc, slave_idx, ERROR_CODE_IDX, error_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Error Code: 0x%.4x", wkc, slave_idx, ERROR_CODE_IDX, error_code);
 
     return wkc;
   }
@@ -222,7 +222,7 @@ public:
 
     uint32 alarm_code;
     wkc += readSDO<uint32>(slave_idx, ALARM_CODE_IDX, 0x00, alarm_code);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Alarm Code: 0x%.8x", wkc, slave_idx, ALARM_CODE_IDX, alarm_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Alarm Code: 0x%.8x", wkc, slave_idx, ALARM_CODE_IDX, alarm_code);
 
     return wkc;
   }
@@ -237,26 +237,41 @@ public:
 
     uint16 status_word;
     wkc += readSDO<uint16>(slave_idx, STATUS_WORD_IDX, 0x00, status_word);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Status Word: 0x%.4x", wkc, slave_idx, STATUS_WORD_IDX, status_word);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Status Word: 0x%.4x", wkc, slave_idx, STATUS_WORD_IDX, status_word);
 
     // Status Code
     uint32 status_code;
     wkc += readSDO<uint32>(slave_idx, STATUS_CODE_IDX, 0x00, status_code);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Status Code: 0x%.4x", wkc, slave_idx, STATUS_CODE_IDX, status_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Status Code: 0x%.4x", wkc, slave_idx, STATUS_CODE_IDX, status_code);
 
     // Following Error Window
     uint32 following_error_window = 1000;
     wkc += writeSDO<uint32>(slave_idx, FOLLOWING_ERROR_WINDOW_IDX, 0x00, following_error_window);
 
     wkc += readSDO<uint32>(slave_idx, FOLLOWING_ERROR_WINDOW_IDX, 0x00, status_code);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Following Error Window: %d", wkc, slave_idx, FOLLOWING_ERROR_WINDOW_IDX, following_error_window);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Following Error Window: %d", wkc, slave_idx, FOLLOWING_ERROR_WINDOW_IDX, following_error_window);
   }
 
+  // In Position Counts
+  int config_in_position_counts(uint16 slave_idx, uint16 in_position_counts = 20, uint16 in_position_error_range = 10, uint16 in_position_timing = 10)
+  {
+    wkc += writeSDO<uint16>(slave_idx, IN_POSITION_COUNTS_IDX, 0x00, in_position_counts);
+    wkc += readSDO<uint16>(slave_idx, IN_POSITION_COUNTS_IDX, 0x00, in_position_counts);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X In Position Counts: %d", wkc, slave_idx, IN_POSITION_COUNTS_IDX, in_position_counts);
+
+    wkc += readSDO<uint16>(slave_idx, IN_POSITION_ERROR_RANGE_IDX, 0x00, in_position_error_range);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X In Position Error Range: %d", wkc, slave_idx, IN_POSITION_ERROR_RANGE_IDX, in_position_error_range);
+
+    wkc += readSDO<uint16>(slave_idx, IN_POSITION_TIMING_IDX, 0x00, in_position_timing);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X In Position Timing: %d x 200us", wkc, slave_idx, IN_POSITION_TIMING_IDX, in_position_timing);
+
+    return wkc;
+  }
 
   // Quick Stop
-  int config_quickstop(uint16 slave, uint32 quickstop_deceleration)
+  int config_quickstop(uint16 slave_idx, uint32 quickstop_deceleration)
   {
-    wkc += writeSDO<uint32>(slave, QUICKSTOP_DECELERATION_IDX, 0x00, quickstop_deceleration);
+    wkc += writeSDO<uint32>(slave_idx, QUICKSTOP_DECELERATION_IDX, 0x00, quickstop_deceleration);
     return wkc;
   }
 
@@ -267,7 +282,7 @@ public:
     wkc += writeSDO<int8>(slave_idx, HOMING_METHOD_IDX, 0x00, homing_method);
 
     wkc += readSDO<int8>(slave_idx, HOMING_METHOD_IDX, 0x00, homing_method);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Method: %d", wkc, slave_idx, HOMING_METHOD_IDX, homing_method);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Homing Method: %d", wkc, slave_idx, HOMING_METHOD_IDX, homing_method);
 
     wkc += writeSDO<uint32>(slave_idx, HOMING_SPEED_IDX, 0x01, homing_speed_to_switch);
     wkc += writeSDO<uint32>(slave_idx, HOMING_SPEED_IDX, 0x02, homing_speed_to_zero);
@@ -275,7 +290,7 @@ public:
 
     wkc += readSDO<uint32>(slave_idx, HOMING_SPEED_IDX, 0x01, homing_speed_to_switch);
     wkc += readSDO<uint32>(slave_idx, HOMING_SPEED_IDX, 0x02, homing_speed_to_zero);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4x Homing Speed: %d %d", wkc, slave_idx, HOMING_SPEED_IDX, homing_speed_to_switch, homing_speed_to_zero);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Homing Speed: %d %d", wkc, slave_idx, HOMING_SPEED_IDX, homing_speed_to_switch, homing_speed_to_zero);
 
     wkc += writeSDO<int32>(slave_idx, HOME_OFFSET_IDX, 0x00, home_offset);
     wkc += writeSDO<uint8>(slave_idx, HOME_SWITCH_IDX, 0x00, home_switch);

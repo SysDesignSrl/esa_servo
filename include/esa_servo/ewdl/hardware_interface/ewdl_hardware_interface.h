@@ -115,6 +115,7 @@ public:
         ROS_DEBUG("EtherCAT Slave[%d] QuickStop Deceleration: %u", slave_idx, quickstop_deceleration);
 
         ec_master.config_homing(slave_idx, homing_method, homing_speed_to_switch, homing_speed_to_zero, homing_acceleration, home_offset, home_switch);
+        ec_master.config_in_position_counts(slave_idx, 0, 10, 10);
         ec_master.config_quickstop(slave_idx, quickstop_deceleration);
       }
       catch (const XmlRpc::XmlRpcException &ex)

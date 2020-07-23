@@ -193,5 +193,27 @@ const uint16 ZERO_POSITION_IDX = 0x200C;
  * the drive. */
 const uint16 ALARM_CODE_IDX = 0x200F;
 
+/* This object configures the in position counts to determine if the motor is in
+ * position (dynamic).
+ * Dynamic means checking whether the motor is in position all the time. */
+const uint16 IN_POSITION_COUNTS_IDX = 0x201A;
+
+/* This object reads back the encoder resolution in lines. */
+const uint16 ENCODER_RESOLUTION_IDX = 0x201C;
+
+/* This object configures the in position counts to determine if the motor is in
+ * position (static).
+ * Static means checking whether the motor is in position when the motor is
+ * stopped. This object is the same as “PD” command in Host Command Reference. */
+const uint16 IN_POSITION_ERROR_RANGE_IDX = 0x201D;
+
+/* This object configures the time duration for in-position judging condition.
+ * If it is always in-position within the time duration, the drive will define
+ * the motor as in-position.
+ * This object is the same as “PE” command in Host Command Reference. Time is
+ * counted as processor cycles, one cycle refers to 200μsec for EWDL EtherCAT
+ * drive. */
+const uint16 IN_POSITION_TIMING_IDX = 0x201E;
+
 } } }
 #endif
