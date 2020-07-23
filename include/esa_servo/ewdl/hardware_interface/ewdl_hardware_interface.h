@@ -104,6 +104,10 @@ public:
         int home_offset = slaves_param[i]["home_offset"];
         int home_switch = slaves_param[i]["home_switch"];
 
+        int in_position_counts = slaves_param[i]["in_position_counts"];
+        int in_position_error_range = slaves_param[i]["in_position_error_range"];
+        int in_position_timing = slaves_param[i]["in_position_timing"];
+
         int quickstop_deceleration = slaves_param[i]["quickstop_deceleration"];
 
         const uint16 slave_idx = 1 + i;
@@ -112,10 +116,13 @@ public:
         ROS_DEBUG("EtherCAT Slave[%d] Homing Acceleration: %d", slave_idx, homing_acceleration);
         ROS_DEBUG("EtherCAT Slave[%d] Home Offset: %d", slave_idx, home_offset);
         ROS_DEBUG("EtherCAT Slave[%d] Home Switch: 0x%.2x", slave_idx, home_switch);
+        ROS_DEBUG("EtherCAT Slave[%d] In Position Counts: %u", slave_idx, in_position_counts);
+        ROS_DEBUG("EtherCAT Slave[%d] In Position Error Range: %u", slave_idx, in_position_error_range);
+        ROS_DEBUG("EtherCAT Slave[%d] In Position Timing: %u", slave_idx, in_position_timing);
         ROS_DEBUG("EtherCAT Slave[%d] QuickStop Deceleration: %u", slave_idx, quickstop_deceleration);
 
         ec_master.config_homing(slave_idx, homing_method, homing_speed_to_switch, homing_speed_to_zero, homing_acceleration, home_offset, home_switch);
-        ec_master.config_in_position_counts(slave_idx, 0, 10, 10);
+        ec_master.config_in_position(slave_idx, in_position_counts,in_position_error_range, in_position_timing);
         ec_master.config_quickstop(slave_idx, quickstop_deceleration);
       }
       catch (const XmlRpc::XmlRpcException &ex)

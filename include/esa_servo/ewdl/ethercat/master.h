@@ -253,7 +253,7 @@ public:
   }
 
   // In Position Counts
-  int config_in_position_counts(uint16 slave_idx, uint16 in_position_counts = 20, uint16 in_position_error_range = 10, uint16 in_position_timing = 10)
+  int config_in_position(uint16 slave_idx, uint16 in_position_counts = 20, uint16 in_position_error_range = 10, uint16 in_position_timing = 10)
   {
     wkc += writeSDO<uint16>(slave_idx, IN_POSITION_COUNTS_IDX, 0x00, in_position_counts);
     wkc += readSDO<uint16>(slave_idx, IN_POSITION_COUNTS_IDX, 0x00, in_position_counts);
