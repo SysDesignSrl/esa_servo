@@ -181,7 +181,7 @@ int main (int argc, char* argv[])
 
     const ros::Time time = ros::Time::now();
     const ros::Duration period = time - prev_time;
-    ROS_DEBUG_THROTTLE(1.0, "Period: %fs", period.toSec());
+    //ROS_DEBUG_THROTTLE(1.0, "Period: %fs", period.toSec());
 
     servo_hw.read(time, period);
     act_to_jnt_state_interface->propagate();
