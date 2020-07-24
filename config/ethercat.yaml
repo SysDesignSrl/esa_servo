@@ -12,6 +12,8 @@ slaves:
     homing_acceleration: 1000000        #
     home_offset: 1750                   #
     home_switch: 0x08                   #
+    # Following Error Window
+    following_error_window: 10000       # Range of tolerated position values respect to the commanded position value.
     # In Position
     in_position_counts: 0               # Position counts to determine if the motor is in position (dynamic).
     in_position_error_range: 20         # Position counts to determine if the motor is in position (static).

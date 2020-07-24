@@ -252,6 +252,17 @@ public:
     ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Following Error Window: %d", wkc, slave_idx, FOLLOWING_ERROR_WINDOW_IDX, following_error_window);
   }
 
+  // Following Error Window
+  int config_following_error_window(uint16 slave_idx, uint32 following_error_window = 1000)
+  {
+    wkc += writeSDO<uint32>(slave_idx, FOLLOWING_ERROR_WINDOW_IDX, 0x00, following_error_window);
+
+    wkc += readSDO<uint32>(slave_idx, FOLLOWING_ERROR_WINDOW_IDX, 0x00, following_error_window);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Following Error Window: %d", wkc, slave_idx, FOLLOWING_ERROR_WINDOW_IDX, following_error_window);
+
+    return wkc;
+  }
+
   // In Position Counts
   int config_in_position(uint16 slave_idx, uint16 in_position_counts = 20, uint16 in_position_error_range = 10, uint16 in_position_timing = 10)
   {
