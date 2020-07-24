@@ -6,8 +6,12 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ros/callback_queue.h>
+
+// std_msgs
+#include <std_msgs/Bool.h>
 // std_srvs
 #include <std_srvs/Trigger.h>
+
 // transmission_interface
 #include <transmission_interface/robot_transmissions.h>
 #include <transmission_interface/transmission_interface.h>
@@ -21,6 +25,51 @@
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
 
+class HomingChecker {
+
+  ros::NodeHandle node;
+
+  ros::Timer homing_checker_timer;
+
+  ros::Publisher homing_attained_pub;
+  ros::Publisher homing_error_pub;
+
+public:
+
+  HomingChecker(const ros::NodeHandle &node = ros::NodeHandle()) :
+    node(node) { }
+
+  void start()
+  {
+    homing_attained_pub = node.advertise<std_msgs::Bool>("homing_attained", 1, true);
+    homing_error_pub = node.advertise<std_msgs::Bool>("homing_error", 1, true);
+
+    ros::Duration period(0.5);
+    homing_checker_timer = node.createTimer(period, &HomingChecker::homing_check_cb, this, false, true);
+  }
+
+  void homing_check_cb(const ros::TimerEvent &ev)
+  {
+    bool homing_attained;
+    if (node.getParamCached("homing_attained", homing_attained))
+    {
+      std_msgs::Bool msg;
+      msg.data = homing_attained;
+      homing_attained_pub.publish(msg);
+    }
+
+    bool homing_error;
+    if (node.getParamCached("homing_error", homing_error))
+    {
+      std_msgs::Bool msg;
+      msg.data = homing_error;
+      homing_error_pub.publish(msg);
+    }
+  }
+
+};
+
+
 int main (int argc, char* argv[])
 {
   ros::init(argc, argv, "ewdl_driver");
@@ -30,6 +79,10 @@ int main (int argc, char* argv[])
 
   ros::CallbackQueue callback_queue;
   node.setCallbackQueue(&callback_queue);
+
+  // Homing Checker
+  HomingChecker homing_checker(node);
+  homing_checker.start();
 
 
   // Parameters

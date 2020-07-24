@@ -265,6 +265,28 @@ public:
       ROS_DEBUG_THROTTLE(1.0, "Slave[%d], position_actual_value: %d", slave_idx, ec_master.tx_pdo[slave_idx].position_actual_value);
       ROS_DEBUG_THROTTLE(1.0, "Slave[%d], digital_inputs: 0x%.8x", slave_idx, ec_master.tx_pdo[slave_idx].digital_inputs);
     }
+
+    for (int i = 0; i < n_actuators; i++)
+    {
+      const uint16 slave_idx = 1 + i;
+
+      uint16 status_word = ec_master.tx_pdo[slave_idx].status_word;
+      int8 mode_of_operation_display = ec_master.tx_pdo[slave_idx].mode_of_operation_display;
+
+      switch (mode_of_operation_display)
+      {
+        case esa::ewdl::ethercat::mode_of_operation_t::HOMING:
+
+          if ((status_word >> 12) & 0x01)   // Homing Attained
+          {
+            node.setParam("homing_attained", true);
+          }
+          if ((status_word >> 13) & 0x01)   // Homing Error
+          {
+            node.setParam("homing_error", true);
+          }
+      }
+    }
   }
 
 
