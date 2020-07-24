@@ -5,6 +5,8 @@ bool esa::ewdl::ServoHW::start()
 {
   if (ec_master.start())
   {
+    reset_controllers = true;
+
     return true;
   }
   else
