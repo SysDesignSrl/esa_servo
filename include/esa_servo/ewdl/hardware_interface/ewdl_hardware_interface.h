@@ -285,9 +285,18 @@ public:
           {
             node.setParam("homing_attained", true);
           }
+          else
+          {
+            node.setParam("homing_attained", false);
+          }
+
           if ((status_word >> 13) & 0x01)   // Homing Error
           {
             node.setParam("homing_error", true);
+          }
+          else
+          {
+            node.setParam("homing_error", false);
           }
       }
     }

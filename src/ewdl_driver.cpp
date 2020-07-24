@@ -51,7 +51,7 @@ public:
   void homing_check_cb(const ros::TimerEvent &ev)
   {
     bool homing_attained;
-    if (node.getParamCached("homing_attained", homing_attained))
+    if (node.getParam("homing_attained", homing_attained))
     {
       std_msgs::Bool msg;
       msg.data = homing_attained;
@@ -59,7 +59,7 @@ public:
     }
 
     bool homing_error;
-    if (node.getParamCached("homing_error", homing_error))
+    if (node.getParam("homing_error", homing_error))
     {
       std_msgs::Bool msg;
       msg.data = homing_error;
