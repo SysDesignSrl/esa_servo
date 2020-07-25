@@ -124,6 +124,7 @@ int main (int argc, char* argv[])
   {
     ROS_INFO("Hardware Interface initialized correctly");
   }
+  else
   {
     ROS_FATAL("Failed to initialize Hardware Interface");
     return 1;
@@ -139,6 +140,7 @@ int main (int argc, char* argv[])
     servo_hw.jnt_to_act_pos_interface = servo_tr.get<transmission_interface::JointToActuatorPositionInterface>();
     ROS_INFO("Transmission Interface loaded from URDF.");
   }
+  else
   {
     ROS_FATAL("Failed to load Transmission Interface from URDF");
     return 1;
