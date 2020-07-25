@@ -15,8 +15,8 @@ slaves:
     # Following Error Window
     following_error_window: 10000       # Range of tolerated position values respect to the commanded position value.
     # In Position
-    in_position_counts: 0               # Position counts to determine if the motor is in position (dynamic).
-    in_position_error_range: 20         # Position counts to determine if the motor is in position (static).
-    in position_timing: 20              # Time duration for in-position judging condition. [x 200us]
+    in_position_counts: 20              # Position counts to determine if the motor is in position (dynamic).
+    in_position_error_range: 10         # Position counts to determine if the motor is in position (static).
+    in_position_timing: 10              # Time duration for in-position judging condition. [x 200us]
     # QuickStop
     quickstop_deceleration: 3000000

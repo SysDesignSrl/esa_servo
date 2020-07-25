@@ -154,7 +154,7 @@ public:
 
         ec_master.config_homing(slave_idx, homing_method, homing_speed_to_switch, homing_speed_to_zero, homing_acceleration, home_offset, home_switch);
         ec_master.config_following_error_window(slave_idx, following_error_window);
-        ec_master.config_in_position(slave_idx, in_position_counts,in_position_error_range, in_position_timing);
+        ec_master.config_in_position(slave_idx, in_position_counts, in_position_error_range, in_position_timing);
         ec_master.config_quickstop(slave_idx, quickstop_deceleration);
       }
       catch (const XmlRpc::XmlRpcException &ex)
@@ -162,6 +162,7 @@ public:
         auto code = ex.getCode();
         auto message = ex.getMessage();
         ROS_ERROR("Error Code: %d, %s", code, message.c_str());
+        return false;
       }
     }
 
@@ -209,14 +210,14 @@ public:
 
     if (!init_ethercat(ifname, slaves))
     {
-      ROS_FATAL("Failed to initialize Hardware Interface!");
+      ROS_ERROR("Failed to initialize EtherCAT master");
       close();
       return false;
     }
 
     if (!config_slaves(slaves_param))
     {
-      ROS_FATAL("Failed to initialize Hardware Interface!");
+      ROS_ERROR("Failed to configure EtherCAT slaves");
       close();
       return false;
     }
