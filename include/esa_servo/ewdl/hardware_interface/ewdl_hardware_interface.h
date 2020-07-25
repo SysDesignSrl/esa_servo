@@ -11,6 +11,8 @@
 #include <std_srvs/Trigger.h>
 // controller_manager
 #include <controller_manager/controller_manager.h>
+// transmission_interface
+#include <transmission_interface/transmission_interface.h>
 // hardware_interface
 #include <hardware_interface/actuator_state_interface.h>
 #include <hardware_interface/actuator_command_interface.h>
@@ -38,14 +40,20 @@ protected:
 
   ros::NodeHandle node;
 
-  double loop_hz;
-  std::vector<std::string> joints;
-  std::vector<std::string> actuators;
 
-  //
+  ros::Time control_time;
+  ros::Timer control_loop;
+
+  bool reset_controllers = true;
+  controller_manager::ControllerManager controller_manager;
+
+  // Hardware Interface
   hardware_interface::ActuatorStateInterface act_state_interface;
   hardware_interface::PositionActuatorInterface pos_act_interface;
   hardware_interface::VelocityActuatorInterface vel_act_interface;
+
+  std::vector<std::string> joints;
+  std::vector<std::string> actuators;
 
   //
   std::vector<double> a_pos, a_pos_cmd;
@@ -56,12 +64,32 @@ protected:
   std::vector<double> joint_lower_limits;
   std::vector<double> joint_upper_limits;
 
+
+  void control_loop_cb(const ros::TimerEvent &ev)
+  {
+    const ros::Time time = ev.current_real;
+    const ros::Duration period = time - control_time;
+
+    read(time, period);
+    act_to_jnt_state_interface->propagate();
+
+    controller_manager.update(time, period, reset_controllers);
+
+    jnt_to_act_pos_interface->propagate();
+    write(time, period);
+
+    control_time = time;
+  }
+
 public:
 
-  bool reset_controllers = false;
+  // Transmission Interface
+  transmission_interface::ActuatorToJointStateInterface* act_to_jnt_state_interface;
+  transmission_interface::JointToActuatorPositionInterface* jnt_to_act_pos_interface;
 
-
-  ServoHW(ros::NodeHandle &node) : node(node)
+  ServoHW(ros::NodeHandle &node) :
+    node(node),
+    controller_manager(this, node)
   {
 
   }
@@ -143,7 +171,6 @@ public:
 
   bool init(double loop_hz, const std::vector<std::string> &joints, const std::vector<std::string> &actuators)
   {
-    this->loop_hz = loop_hz;
     this->joints = joints;
     this->actuators = actuators;
 
@@ -180,7 +207,6 @@ public:
       }
     }
 
-
     if (!init_ethercat(ifname, slaves))
     {
       ROS_FATAL("Failed to initialize Hardware Interface!");
@@ -195,6 +221,9 @@ public:
       return false;
     }
 
+    // Control Loop
+    ros::Duration period(1.0/loop_hz);
+    control_loop = node.createTimer(period, &esa::ewdl::ServoHW::control_loop_cb, this, false, false);
 
     // Hardware Interface
     const int n_actuators = actuators.size();
@@ -217,20 +246,18 @@ public:
 
     registerInterface(&act_state_interface);
     registerInterface(&pos_act_interface);
-    // registerInterface(&vel_act_interface);
 
-    ROS_INFO("Hardware Interface initialized correctly.");
     return true;
   }
 
 
   /* */
-  bool start();
-  bool start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+  bool ready_to_switch_on();
+  bool ready_to_switch_on(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
-  bool enable_motion();
-  bool enable_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+  bool switch_on();
+  bool switch_on(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
   bool start_homing();
@@ -277,6 +304,16 @@ public:
       uint16 status_word = ec_master.tx_pdo[slave_idx].status_word;
       int8 mode_of_operation_display = ec_master.tx_pdo[slave_idx].mode_of_operation_display;
 
+
+      if ((status_word >> 2) & 0x01)
+      {
+        control_loop.stop();
+        reset_controllers = true;
+        ROS_FATAL("Slave[%d]: Fault!!", slave_idx);
+        return;
+      }
+
+
       switch (mode_of_operation_display)
       {
         case esa::ewdl::ethercat::mode_of_operation_t::HOMING:
@@ -298,6 +335,7 @@ public:
           {
             node.setParam("homing_error", false);
           }
+          break;
       }
     }
   }

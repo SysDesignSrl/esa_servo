@@ -1,66 +1,71 @@
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
 
-bool esa::ewdl::ServoHW::start()
+bool esa::ewdl::ServoHW::ready_to_switch_on()
 {
-  if (ec_master.start())
+  if (ec_master.ready_to_switch_on())
   {
     reset_controllers = true;
 
+    control_time = ros::Time::now();
+    control_loop.start();
+
+    ROS_INFO("Ready to Switch On");
     return true;
   }
   else
   {
+    ROS_ERROR("Failed to enter state 'Ready to Switch On'");
     return false;
   }
 }
 
 
-bool esa::ewdl::ServoHW::start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::ServoHW::ready_to_switch_on(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
-  if (start())
+  if (ready_to_switch_on())
   {
     res.success = true;
-    res.message = "Ready to Switch On.";
+    res.message = "Ready to Switch On";
   }
   else
   {
     res.success = false;
-    res.message = "Failed to enter state 'Ready to Switch On'.";
+    res.message = "Failed to enter state 'Ready to Switch On'";
   }
 
   return true;
 }
 
 
-bool esa::ewdl::ServoHW::enable_motion()
+bool esa::ewdl::ServoHW::switch_on()
 {
-  if (ec_master.enable_motion())
+  if (ec_master.switch_on())
   {
     reset_controllers = true;
 
-    ROS_INFO("Motion enabled.");
+    ROS_INFO("Switch On");
     return true;
   }
   else
   {
-    ROS_ERROR("Failed to enable Motion!");
+    ROS_ERROR("Failed to Switch On");
     return false;
   }
 }
 
 
-bool esa::ewdl::ServoHW::enable_motion(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+bool esa::ewdl::ServoHW::switch_on(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
 {
-  if (enable_motion())
+  if (switch_on())
   {
     res.success = true;
-    res.message = "Motion enabled.";
+    res.message = "Switch On";
   }
   else
   {
     res.success = false;
-    res.message = "Failed to enable Motion.";
+    res.message = "Failed to Switch On";
   }
 
   return true;
@@ -78,7 +83,7 @@ bool esa::ewdl::ServoHW::start_homing()
   }
   else
   {
-    ROS_ERROR("Failed to start Homing preocedure.");
+    ROS_ERROR("Failed to start Homing.");
     return false;
   }
 }

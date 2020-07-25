@@ -328,7 +328,7 @@ public:
   }
 
 
-  bool start()
+  bool ready_to_switch_on()
   {
     for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
@@ -362,7 +362,7 @@ public:
   }
 
 
-  bool enable_motion()
+  bool switch_on()
   {
     for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
