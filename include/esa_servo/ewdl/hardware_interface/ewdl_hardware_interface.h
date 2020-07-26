@@ -253,6 +253,14 @@ public:
 
 
   /* */
+  bool start();
+  bool start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
+  /* */
+  bool fault_reset();
+  bool fault_reset(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
+  /* */
   bool ready_to_switch_on();
   bool ready_to_switch_on(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
@@ -292,10 +300,10 @@ public:
       a_pos[i] = ec_master.tx_pdo[slave_idx].position_actual_value / POSITION_STEP_FACTOR;
       // a_vel[i] = ec_master.tx_pdo[slave_idx].velocity_actual_value / VELOCITY_STEP_FACTOR;
 
-      // ROS_DEBUG_THROTTLE(1.0, "Slave[%d], status_word: 0x%.4x", slave_idx, ec_master.tx_pdo[slave_idx].status_word);
-      // ROS_DEBUG_THROTTLE(1.0, "Slave[%d], mode_of_operation display: %d", slave_idx, ec_master.tx_pdo[slave_idx].mode_of_operation_display);
-      // ROS_DEBUG_THROTTLE(1.0, "Slave[%d], position_actual_value: %d", slave_idx, ec_master.tx_pdo[slave_idx].position_actual_value);
-      // ROS_DEBUG_THROTTLE(1.0, "Slave[%d], digital_inputs: 0x%.8x", slave_idx, ec_master.tx_pdo[slave_idx].digital_inputs);
+      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], status_word: 0x%.4x", slave_idx, ec_master.tx_pdo[slave_idx].status_word);
+      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], mode_of_operation display: %d", slave_idx, ec_master.tx_pdo[slave_idx].mode_of_operation_display);
+      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], position_actual_value: %d", slave_idx, ec_master.tx_pdo[slave_idx].position_actual_value);
+      ROS_DEBUG_THROTTLE(1.0, "Slave[%d], digital_inputs: 0x%.8x", slave_idx, ec_master.tx_pdo[slave_idx].digital_inputs);
     }
 
     for (int i = 0; i < n_actuators; i++)
@@ -306,12 +314,10 @@ public:
       int8 mode_of_operation_display = ec_master.tx_pdo[slave_idx].mode_of_operation_display;
 
 
-      if ((status_word >> 3) & 0x01)    // Fault
+      if ((status_word >> 3) & 0x01)        // Fault
       {
-        control_loop.stop();
         reset_controllers = true;
-        ROS_FATAL("Slave[%d]: Fault!!", slave_idx);
-        return;
+        ROS_FATAL_THROTTLE(1.0, "Slave[%d]: Fault!!", slave_idx);
       }
 
 

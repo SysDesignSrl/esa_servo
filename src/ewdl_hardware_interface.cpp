@@ -1,14 +1,82 @@
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
 
-bool esa::ewdl::ServoHW::ready_to_switch_on()
+bool esa::ewdl::ServoHW::start()
 {
-  if (ec_master.ready_to_switch_on())
+  if (ec_master.start())
   {
     reset_controllers = true;
 
     control_time = ros::Time::now();
     control_loop.start();
+
+    ROS_INFO("EtherCAT OPERATIONAL");
+    return true;
+  }
+  else
+  {
+    ROS_ERROR("EtherCAT failed to enter state OPERATIONAL");
+    return false;
+  }
+}
+
+
+bool esa::ewdl::ServoHW::start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (start())
+  {
+    res.success = true;
+    res.message = "EtherCAT OPERATIONAL";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "EtherCAT failed to enter state OPERATIONAL";
+  }
+
+  return true;
+}
+
+
+bool esa::ewdl::ServoHW::fault_reset()
+{
+  if (ec_master.fault_reset())
+  {
+    reset_controllers = true;
+
+    ROS_INFO("Fault Reset");
+    return true;
+  }
+  else
+  {
+    ROS_ERROR("Failed to Fault Reset");
+    return false;
+  }
+}
+
+
+bool esa::ewdl::ServoHW::fault_reset(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (fault_reset())
+  {
+    res.success = true;
+    res.message = "Fault Reset";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Failed to Fault Reset";
+  }
+
+  return true;
+}
+
+
+bool esa::ewdl::ServoHW::ready_to_switch_on()
+{
+  if (ec_master.ready_to_switch_on())
+  {
+    reset_controllers = true;
 
     ROS_INFO("Ready to Switch On");
     return true;

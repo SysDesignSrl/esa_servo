@@ -329,7 +329,7 @@ public:
   }
 
 
-  bool ready_to_switch_on()
+  bool start()
   {
     for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
@@ -357,6 +357,29 @@ public:
     {
       ec_slave[slave_idx].state = EC_STATE_OPERATIONAL + EC_STATE_ACK;
       ec_writestate(slave_idx);
+    }
+
+    return true;
+  }
+
+
+  bool fault_reset()
+  {
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      rx_pdo[slave_idx].control_word |= 0x0080;
+    }
+
+    return true;
+  }
+
+
+  bool ready_to_switch_on()
+  {
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      rx_pdo[slave_idx].control_word = 0x0006;
+      rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
     }
 
     return true;
