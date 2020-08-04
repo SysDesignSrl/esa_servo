@@ -26,8 +26,8 @@ inline int slave_setup(uint16 slave)
   int wkc = 0;
 
   // PDO mapping
-  uint16 sdo_1c12[] = { 0x0001, 0x1600 };     // RxPDO1
-  uint16 sdo_1c13[] = { 0x0001, 0x1a00 };     // TxPDO1
+  uint16 sdo_1c12[] = { 0x0001, 0x1601 };     // RxPDO2
+  uint16 sdo_1c13[] = { 0x0001, 0x1a01 };     // TxPDO2
   wkc += writeSDO<uint16>(slave, 0x1c12, 0x00, sdo_1c12);
   wkc += writeSDO<uint16>(slave, 0x1c13, 0x00, sdo_1c13);
 
@@ -94,8 +94,8 @@ private:
 
 public:
 
-  esa::ewdl::ethercat::pdo::RxPDO1 rx_pdo[10];
-  esa::ewdl::ethercat::pdo::TxPDO1 tx_pdo[10];
+  esa::ewdl::ethercat::pdo::RxPDO2 rx_pdo[10];
+  esa::ewdl::ethercat::pdo::TxPDO2 tx_pdo[10];
 
   Master() { }
 
@@ -345,7 +345,7 @@ public:
     {
       rx_pdo[slave_idx].control_word = 0x0006;
       rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
-      rx_pdo[slave_idx].target_position = 0;
+      rx_pdo[slave_idx].target_velocity = 0;
       rx_pdo[slave_idx].touch_probe_function = 0;
       rx_pdo[slave_idx].physical_outputs = 0x0000;
     }

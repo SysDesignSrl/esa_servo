@@ -138,6 +138,7 @@ int main (int argc, char* argv[])
   {
     servo_hw.act_to_jnt_state_interface = servo_tr.get<transmission_interface::ActuatorToJointStateInterface>();
     servo_hw.jnt_to_act_pos_interface = servo_tr.get<transmission_interface::JointToActuatorPositionInterface>();
+    servo_hw.jnt_to_act_vel_interface = servo_tr.get<transmission_interface::JointToActuatorVelocityInterface>();
     ROS_INFO("Transmission Interface loaded from URDF.");
   }
   else

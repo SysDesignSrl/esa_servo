@@ -75,7 +75,7 @@ protected:
 
     controller_manager.update(time, period, reset_controllers);
 
-    jnt_to_act_pos_interface->propagate();
+    jnt_to_act_vel_interface->propagate();
     write(time, period);
 
     control_time = time;
@@ -86,6 +86,7 @@ public:
   // Transmission Interface
   transmission_interface::ActuatorToJointStateInterface* act_to_jnt_state_interface;
   transmission_interface::JointToActuatorPositionInterface* jnt_to_act_pos_interface;
+  transmission_interface::JointToActuatorVelocityInterface* jnt_to_act_vel_interface;
 
   ServoHW(ros::NodeHandle &node) :
     node(node),
@@ -247,6 +248,7 @@ public:
 
     registerInterface(&act_state_interface);
     registerInterface(&pos_act_interface);
+    registerInterface(&vel_act_interface);
 
     return true;
   }
@@ -298,7 +300,7 @@ public:
       const uint16 slave_idx = 1 + i;
 
       a_pos[i] = ec_master.tx_pdo[slave_idx].position_actual_value / POSITION_STEP_FACTOR;
-      // a_vel[i] = ec_master.tx_pdo[slave_idx].velocity_actual_value / VELOCITY_STEP_FACTOR;
+      a_vel[i] = ec_master.tx_pdo[slave_idx].velocity_actual_value / VELOCITY_STEP_FACTOR;
 
       ROS_DEBUG_THROTTLE(1.0, "Slave[%d], status_word: 0x%.4x", slave_idx, ec_master.tx_pdo[slave_idx].status_word);
       ROS_DEBUG_THROTTLE(1.0, "Slave[%d], mode_of_operation display: %d", slave_idx, ec_master.tx_pdo[slave_idx].mode_of_operation_display);
@@ -356,7 +358,7 @@ public:
     {
       const uint16 slave_idx = 1 + i;
 
-      ec_master.rx_pdo[slave_idx].target_position = a_pos_cmd[i] * POSITION_STEP_FACTOR;
+      ec_master.rx_pdo[slave_idx].target_velocity = a_vel_cmd[i] * VELOCITY_STEP_FACTOR;
       ec_master.rx_pdo[slave_idx].touch_probe_function = 0;
       ec_master.rx_pdo[slave_idx].physical_outputs = 0x0000;
 
