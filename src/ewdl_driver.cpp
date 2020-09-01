@@ -40,7 +40,7 @@ public:
     homing_attained_pub = node.advertise<std_msgs::Bool>("homing_attained", 1, true);
     homing_error_pub = node.advertise<std_msgs::Bool>("homing_error", 1, true);
 
-    ros::Duration period(0.5);
+    ros::Duration period(1.0);
     homing_checker_timer = node.createTimer(period, &HomingChecker::homing_check_cb, this, false, true);
   }
 
@@ -77,8 +77,8 @@ int main (int argc, char* argv[])
   node.setCallbackQueue(&callback_queue);
 
   // Homing Checker
-  HomingChecker homing_checker(node);
-  homing_checker.start();
+  //HomingChecker homing_checker(node);
+  //homing_checker.start();
 
 
   // Parameters
