@@ -11,7 +11,7 @@
   <rosparam command="load" file="$(find esa_servo)/config/joint_limits.yaml" />
 
   <!-- -->
-  <node name="ewdl_driver" launch-prefix="chrt --rr 99 ethercat_grant" pkg="esa_servo" type="ewdl_driver" output="screen">
+  <node name="ewdl_driver" launch-prefix="chrt -f 99 ethercat_grant" pkg="esa_servo" type="ewdl_driver" output="screen">
     <rosparam command="load" ns="ethercat" file="$(arg ethercat_config)"/>
   </node>
 
