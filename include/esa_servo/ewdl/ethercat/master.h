@@ -137,7 +137,7 @@ public:
     ec_configdc();
     for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      ec_dcsync0(slave_idx, TRUE, 1000000U, 0);
+      ec_dcsync0(slave_idx, TRUE, 2000000U, 0);
     }
 
 
