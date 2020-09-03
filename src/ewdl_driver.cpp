@@ -6,8 +6,6 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ros/callback_queue.h>
-// std_msgs
-#include <std_msgs/Bool.h>
 // std_srvs
 #include <std_srvs/Trigger.h>
 // transmission_interface
@@ -21,51 +19,6 @@
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
 
-class HomingChecker {
-
-  ros::NodeHandle node;
-
-  ros::Timer homing_checker_timer;
-
-  ros::Publisher homing_attained_pub;
-  ros::Publisher homing_error_pub;
-
-public:
-
-  HomingChecker(const ros::NodeHandle &node = ros::NodeHandle()) :
-    node(node) { }
-
-  void start()
-  {
-    homing_attained_pub = node.advertise<std_msgs::Bool>("homing_attained", 1, true);
-    homing_error_pub = node.advertise<std_msgs::Bool>("homing_error", 1, true);
-
-    ros::Duration period(1.0);
-    homing_checker_timer = node.createTimer(period, &HomingChecker::homing_check_cb, this, false, true);
-  }
-
-  void homing_check_cb(const ros::TimerEvent &ev)
-  {
-    bool homing_attained;
-    if (node.getParam("homing_attained", homing_attained))
-    {
-      std_msgs::Bool msg;
-      msg.data = homing_attained;
-      homing_attained_pub.publish(msg);
-    }
-
-    bool homing_error;
-    if (node.getParam("homing_error", homing_error))
-    {
-      std_msgs::Bool msg;
-      msg.data = homing_error;
-      homing_error_pub.publish(msg);
-    }
-  }
-
-};
-
-
 int main (int argc, char* argv[])
 {
   ros::init(argc, argv, "ewdl_driver");
@@ -75,10 +28,6 @@ int main (int argc, char* argv[])
 
   ros::CallbackQueue callback_queue;
   node.setCallbackQueue(&callback_queue);
-
-  // Homing Checker
-  //HomingChecker homing_checker(node);
-  //homing_checker.start();
 
 
   // Parameters
@@ -146,6 +95,10 @@ int main (int argc, char* argv[])
     return 1;
   }
 
+  // Controller Manager
+  controller_manager::ControllerManager controller_manager(&servo_hw, node);
+
+
   // Advertised Services
   auto start_srv = node.advertiseService("start", &esa::ewdl::ServoHW::start, &servo_hw);
   auto fault_reset_srv = node.advertiseService("fault_reset", &esa::ewdl::ServoHW::fault_reset, &servo_hw);
@@ -169,6 +122,29 @@ int main (int argc, char* argv[])
   }
 
 
-  ros::waitForShutdown();
+  // Loop
+  ros::Time prev_time = ros::Time::now();
+  ros::Rate rate(loop_hz);
+  while (ros::ok())
+  {
+    rate.sleep();
+
+    const ros::Time time = ros::Time::now();
+    const ros::Duration period = time - prev_time;
+    //ROS_DEBUG_THROTTLE(1.0, "Period: %fs", period.toSec());
+
+    servo_hw.read(time, period);
+    servo_hw.act_to_jnt_state_interface->propagate();
+
+    controller_manager.update(time, period, servo_hw.reset_controllers);
+
+    servo_hw.jnt_to_act_pos_interface->propagate();
+    servo_hw.write(time, period);
+
+    prev_time = time;
+  }
+
+
+  servo_hw.close();
   return 0;
 }

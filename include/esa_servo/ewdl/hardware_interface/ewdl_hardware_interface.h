@@ -40,13 +40,6 @@ protected:
 
   ros::NodeHandle node;
 
-
-  ros::Time control_time;
-  ros::Timer control_loop;
-
-  bool reset_controllers = true;
-  controller_manager::ControllerManager controller_manager;
-
   // Hardware Interface
   hardware_interface::ActuatorStateInterface act_state_interface;
   hardware_interface::PositionActuatorInterface pos_act_interface;
@@ -65,31 +58,15 @@ protected:
   std::vector<double> joint_upper_limits;
 
 
-  void control_loop_cb(const ros::TimerEvent &ev)
-  {
-    const ros::Time time = ev.current_real;
-    const ros::Duration period = time - control_time;
-
-    read(time, period);
-    act_to_jnt_state_interface->propagate();
-
-    controller_manager.update(time, period, reset_controllers);
-
-    jnt_to_act_pos_interface->propagate();
-    write(time, period);
-
-    control_time = time;
-  }
-
 public:
+
+  bool reset_controllers = true;
 
   // Transmission Interface
   transmission_interface::ActuatorToJointStateInterface* act_to_jnt_state_interface;
   transmission_interface::JointToActuatorPositionInterface* jnt_to_act_pos_interface;
 
-  ServoHW(ros::NodeHandle &node) :
-    node(node),
-    controller_manager(this, node)
+  ServoHW(ros::NodeHandle &node) : node(node)
   {
 
   }
@@ -222,10 +199,6 @@ public:
       return false;
     }
 
-    // Control Loop
-    ros::Duration period(1.0/loop_hz);
-    control_loop = node.createTimer(period, &esa::ewdl::ServoHW::control_loop_cb, this, false, false);
-
     // Hardware Interface
     const int n_actuators = actuators.size();
 
@@ -298,7 +271,6 @@ public:
       const uint16 slave_idx = 1 + i;
 
       a_pos[i] = ec_master.tx_pdo[slave_idx].position_actual_value / POSITION_STEP_FACTOR;
-      // a_vel[i] = ec_master.tx_pdo[slave_idx].velocity_actual_value / VELOCITY_STEP_FACTOR;
 
       //ROS_DEBUG_THROTTLE(1.0, "Slave[%d], status_word: 0x%.4x", slave_idx, ec_master.tx_pdo[slave_idx].status_word);
       //ROS_DEBUG_THROTTLE(1.0, "Slave[%d], mode_of_operation display: %d", slave_idx, ec_master.tx_pdo[slave_idx].mode_of_operation_display);
