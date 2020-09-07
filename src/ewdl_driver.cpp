@@ -1,3 +1,5 @@
+#include <time.h>
+
 // STL
 #include <string>
 #include <vector>
@@ -123,25 +125,30 @@ int main (int argc, char* argv[])
 
 
   // Loop
-  ros::Time prev_time = ros::Time::now();
-  ros::Rate rate(loop_hz);
+  timespec prev_time;
+  clock_gettime(CLOCK_MONOTONIC, &prev_time);
+
+  ros::WallRate rate(loop_hz);
   while (ros::ok())
   {
     rate.sleep();
 
-    const ros::Time time = ros::Time::now();
-    const ros::Duration period = time - prev_time;
+    const ros::Time now = ros::Time::now();
+
+    timespec curr_time;
+    clock_gettime(CLOCK_MONOTONIC, &curr_time);
+    const ros::Duration period((curr_time.tv_sec - prev_time.tv_sec) + (curr_time.tv_nsec - prev_time.tv_nsec) / 1000000000U);
     //ROS_DEBUG_THROTTLE(1.0, "Period: %fs", period.toSec());
 
-    servo_hw.read(time, period);
+    servo_hw.read(now, period);
     servo_hw.act_to_jnt_state_interface->propagate();
 
-    controller_manager.update(time, period, servo_hw.reset_controllers);
+    controller_manager.update(now, period, servo_hw.reset_controllers);
 
     servo_hw.jnt_to_act_pos_interface->propagate();
-    servo_hw.write(time, period);
+    servo_hw.write(now, period);
 
-    prev_time = time;
+    prev_time = curr_time;
   }
 
 
