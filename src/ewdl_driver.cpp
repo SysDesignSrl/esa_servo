@@ -113,6 +113,12 @@ int main (int argc, char* argv[])
   auto set_zero_position_srv = node.advertiseService("set_zero_position", &esa::ewdl::ServoHW::set_zero_position, &servo_hw);
 
 
+  node.setParam("fault", false);
+  node.setParam("homing_attained", false);
+  node.setParam("homing_error", false);
+  node.setParam("motion_enabled", false);
+
+
   if (servo_hw.start())
   {
     ROS_INFO("Hardware Interface started.");
@@ -137,8 +143,8 @@ int main (int argc, char* argv[])
 
     timespec curr_time;
     clock_gettime(CLOCK_MONOTONIC, &curr_time);
-    const ros::Duration period((curr_time.tv_sec - prev_time.tv_sec) + (curr_time.tv_nsec - prev_time.tv_nsec) / 1000000000U);
-    ROS_WARN_COND(period.toNSec() > 1000000U, "Period: %fs", period.toSec());
+    const ros::Duration period((curr_time.tv_sec - prev_time.tv_sec) + (curr_time.tv_nsec - prev_time.tv_nsec) / 1000000000.0);
+    ROS_WARN_COND(period.toNSec() > 2100000, "Period: %lu us", period.toNSec() / 1000);
 
     servo_hw.read(now, period);
     servo_hw.act_to_jnt_state_interface->propagate();
