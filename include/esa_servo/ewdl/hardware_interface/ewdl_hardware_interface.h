@@ -286,9 +286,16 @@ public:
       int8 mode_of_operation_display = ec_master.tx_pdo[slave_idx].mode_of_operation_display;
 
 
+      // if (!(status_word >> 2) & 0x01)        // Operation Enabled
+      // {
+      //   node.setParam("motion_enabled", false);
+      // }
+
       if ((status_word >> 3) & 0x01)        // Fault
       {
         reset_controllers = true;
+        node.setParam("fault", true);
+        node.setParam("motion_enabled", false);
         ROS_FATAL_THROTTLE(1.0, "Slave[%d]: Fault!!", slave_idx);
       }
 

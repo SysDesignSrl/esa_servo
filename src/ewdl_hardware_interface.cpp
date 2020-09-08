@@ -6,7 +6,7 @@ bool esa::ewdl::ServoHW::start()
   if (ec_master.start())
   {
     reset_controllers = true;
-    
+
     ROS_INFO("EtherCAT OPERATIONAL");
     return true;
   }
@@ -40,6 +40,7 @@ bool esa::ewdl::ServoHW::fault_reset()
   if (ec_master.fault_reset())
   {
     reset_controllers = true;
+    node.setParam("fault", false);
 
     ROS_INFO("Fault Reset");
     return true;
@@ -176,6 +177,7 @@ bool esa::ewdl::ServoHW::start_motion()
   if (ec_master.start_cyclic_syncronous_position())
   {
     reset_controllers = false;
+    node.setParam("motion_enabled", true);
 
     ROS_INFO("Motion started.");
     return true;
