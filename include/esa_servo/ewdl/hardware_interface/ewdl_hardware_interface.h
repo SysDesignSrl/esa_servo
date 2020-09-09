@@ -284,6 +284,8 @@ public:
 
       uint16 status_word = ec_master.tx_pdo[slave_idx].status_word;
       int8 mode_of_operation_display = ec_master.tx_pdo[slave_idx].mode_of_operation_display;
+      // ROS_DEBUG("Slave[%d], status_word: 0x%.4x", slave_idx, status_word);
+      // ROS_DEBUG("Slave[%d], mode_of_operation display: %d", slave_idx, mode_of_operation_display);
 
 
       // if (!(status_word >> 2) & 0x01)        // Operation Enabled
@@ -308,18 +310,10 @@ public:
           {
             node.setParam("homing_attained", true);
           }
-          else
-          {
-            node.setParam("homing_attained", false);
-          }
 
           if ((status_word >> 13) & 0x01)   // Homing Error
           {
             node.setParam("homing_error", true);
-          }
-          else
-          {
-            node.setParam("homing_error", false);
           }
           break;
       }
@@ -340,6 +334,8 @@ public:
       ec_master.rx_pdo[slave_idx].physical_outputs = 0x0000;
 
       // ROS_DEBUG_THROTTLE(1.0, "Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
+      // ROS_DEBUG("Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
+      // ROS_DEBUG("Slave[%d], mode_of_operation: %d", slave_idx, ec_master.rx_pdo[slave_idx].mode_of_operation);
     }
 
     ec_master.update();

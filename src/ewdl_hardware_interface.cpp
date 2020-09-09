@@ -143,6 +143,8 @@ bool esa::ewdl::ServoHW::start_homing()
   if (ec_master.start_homing())
   {
     reset_controllers = true;
+    node.setParam("homing_attained", false);
+    node.setParam("homing_error", false);
 
     ROS_INFO("Homing started...");
     return true;
@@ -176,7 +178,7 @@ bool esa::ewdl::ServoHW::start_motion()
 {
   if (ec_master.start_cyclic_syncronous_position())
   {
-    reset_controllers = false;
+    reset_controllers = true;
     node.setParam("motion_enabled", true);
 
     ROS_INFO("Motion started.");

@@ -144,12 +144,13 @@ int main (int argc, char* argv[])
     timespec curr_time;
     clock_gettime(CLOCK_MONOTONIC, &curr_time);
     const ros::Duration period((curr_time.tv_sec - prev_time.tv_sec) + (curr_time.tv_nsec - prev_time.tv_nsec) / 1000000000.0);
-    ROS_WARN_COND(period.toNSec() > 4100000, "Period: %lu us", period.toNSec() / 1000);
+    ROS_WARN_COND(period.toSec() > (1.0/loop_hz) + 0.0001, "Period: %.3f ms", period.toNSec() / 1000000.0);
 
     servo_hw.read(now, period);
     servo_hw.act_to_jnt_state_interface->propagate();
 
     controller_manager.update(now, period, servo_hw.reset_controllers);
+    servo_hw.reset_controllers = false;
 
     servo_hw.jnt_to_act_pos_interface->propagate();
     servo_hw.write(now, period);
