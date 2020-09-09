@@ -3,7 +3,7 @@
 ########################
 rail:
   hardware_interface:
-    loop_hz: 500
+    loop_hz: 250
     joints:
       - rail_joint
     actuators:

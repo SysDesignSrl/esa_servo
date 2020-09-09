@@ -144,7 +144,7 @@ int main (int argc, char* argv[])
     timespec curr_time;
     clock_gettime(CLOCK_MONOTONIC, &curr_time);
     const ros::Duration period((curr_time.tv_sec - prev_time.tv_sec) + (curr_time.tv_nsec - prev_time.tv_nsec) / 1000000000.0);
-    ROS_WARN_COND(period.toNSec() > 2100000, "Period: %lu us", period.toNSec() / 1000);
+    ROS_WARN_COND(period.toNSec() > 4100000, "Period: %lu us", period.toNSec() / 1000);
 
     servo_hw.read(now, period);
     servo_hw.act_to_jnt_state_interface->propagate();
