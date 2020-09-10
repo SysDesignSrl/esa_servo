@@ -1,5 +1,3 @@
-#include <time.h>
-
 // STL
 #include <string>
 #include <vector>
@@ -131,8 +129,7 @@ int main (int argc, char* argv[])
 
 
   // Loop
-  timespec prev_time;
-  clock_gettime(CLOCK_MONOTONIC, &prev_time);
+  ros::SteadyTime prev_time = ros::SteadyTime::now();
 
   ros::WallRate rate(loop_hz);
   while (ros::ok())
@@ -140,11 +137,9 @@ int main (int argc, char* argv[])
     rate.sleep();
 
     const ros::Time now = ros::Time::now();
+    const ros::SteadyTime curr_time = ros::SteadyTime::now();
 
-    timespec curr_time;
-    clock_gettime(CLOCK_MONOTONIC, &curr_time);
-    const ros::Duration period((curr_time.tv_sec - prev_time.tv_sec) + (curr_time.tv_nsec - prev_time.tv_nsec) / 1000000000.0);
-    ROS_WARN_COND(period.toSec() > (1.0/loop_hz) + 0.0001, "Period: %.3f ms", period.toNSec() / 1000000.0);
+    const ros::Duration period((curr_time - prev_time).toSec());
 
     servo_hw.read(now, period);
     servo_hw.act_to_jnt_state_interface->propagate();
