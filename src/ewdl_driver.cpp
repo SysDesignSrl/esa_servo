@@ -31,6 +31,8 @@ int main (int argc, char* argv[])
 
 
   // Parameters
+  auto freq = node.param<double>("publish_frequency", 10);
+
   std::string urdf;
   if (!ros::param::get("robot_description", urdf))
   {
@@ -96,7 +98,7 @@ int main (int argc, char* argv[])
   }
 
   // Controller Manager
-  controller_manager::ControllerManager controller_manager(&servo_hw, node);
+  // controller_manager::ControllerManager controller_manager(&servo_hw, node);
 
 
   // Advertised Services
@@ -110,11 +112,8 @@ int main (int argc, char* argv[])
   auto quick_stop_srv = node.advertiseService("quick_stop", &esa::ewdl::ServoHW::quick_stop, &servo_hw);
   auto set_zero_position_srv = node.advertiseService("set_zero_position", &esa::ewdl::ServoHW::set_zero_position, &servo_hw);
 
-
-  node.setParam("fault", false);
-  node.setParam("homing_attained", false);
-  node.setParam("homing_error", false);
-  node.setParam("motion_enabled", false);
+  // Published Topics
+  // auto status_word_pub = node.advertise<std_msgs::Uint16>("status_word", 10);
 
 
   if (servo_hw.start())
@@ -129,28 +128,14 @@ int main (int argc, char* argv[])
 
 
   // Loop
-  ros::SteadyTime prev_time = ros::SteadyTime::now();
-
-  ros::WallRate rate(loop_hz);
+  ros::Rate rate(freq);
   while (ros::ok())
   {
     rate.sleep();
 
-    const ros::Time now = ros::Time::now();
-    const ros::SteadyTime curr_time = ros::SteadyTime::now();
-
-    const ros::Duration period((curr_time - prev_time).toSec());
-
-    servo_hw.read(now, period);
-    servo_hw.act_to_jnt_state_interface->propagate();
-
-    controller_manager.update(now, period, servo_hw.reset_controllers);
-    servo_hw.reset_controllers = false;
-
-    servo_hw.jnt_to_act_pos_interface->propagate();
-    servo_hw.write(now, period);
-
-    prev_time = curr_time;
+    // std_msgs::Uint16 status_word_msg;
+    // status_word_msg.data = servo_hw.status_word;
+    // status_word_pub.publish(status_word_msg);
   }
 
 
