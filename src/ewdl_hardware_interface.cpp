@@ -6,8 +6,6 @@ bool esa::ewdl::ServoHW::start()
   if (ec_master.start())
   {
     reset_controllers = true;
-    
-    clock_gettime(CLOCK_MONOTONIC, &prev_timespec);
     control_loop.start();
 
     ROS_INFO("EtherCAT OPERATIONAL");

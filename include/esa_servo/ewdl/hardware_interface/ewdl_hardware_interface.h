@@ -44,56 +44,7 @@ private:
   esa::ewdl::ethercat::Master ec_master;
 
 
-  struct timespec prev_timespec;
-
-  static void* pthread_fn(void* arg)
-  {
-    esa::ewdl::ServoHW* servo_hw = (esa::ewdl::ServoHW*)arg;
-
-    const ros::Time now = ros::Time::now();
-
-    struct timespec curr_timespec;
-    clock_gettime(CLOCK_MONOTONIC, &curr_timespec);
-
-    struct timespec prev_timespec;
-    prev_timespec = servo_hw->prev_timespec;
-
-    const ros::Duration period((curr_timespec.tv_sec - prev_timespec.tv_sec) + (curr_timespec.tv_nsec - prev_timespec.tv_nsec) / 1000000000.0);
-    // ROS_DEBUG("period: %lu us", period.toNSec() / 1000U);
-
-    servo_hw->read(now, period);
-    servo_hw->act_to_jnt_state_interface->propagate();
-
-    servo_hw->controller_manager->update(now, period, servo_hw->reset_controllers);
-    servo_hw->reset_controllers = false;
-
-    servo_hw->jnt_to_act_pos_interface->propagate();
-    servo_hw->write(now, period);
-
-    servo_hw->prev_timespec = curr_timespec;
-
-    return NULL;
-  }
-
 protected:
-
-  struct
-  {
-    bool ready_to_switch_on;
-    bool switched_on;
-    bool operation_enabled;
-    bool fault;
-    bool voltage_enabled;
-    bool quick_stop;
-    bool switch_on_disabled;
-    bool warning;
-    bool remote;
-    bool target_reached;
-    bool internal_limit_active;
-
-    bool homing_attained;
-    bool homing_error;
-  } status;
 
   ros::NodeHandle node;
   ros::SteadyTimer control_loop;
@@ -121,95 +72,63 @@ protected:
 
   void control_loop_cb(const ros::SteadyTimerEvent &ev)
   {
-    pthread_t pthread;
-    pthread_attr_t pthread_attr;
+    pthread_t pthread = pthread_self();
+    sched_param param;
+    int policy;
 
-    errno = pthread_attr_init(&pthread_attr);
+    errno = pthread_getschedparam(pthread, &policy, &param);
     if (errno != 0)
     {
-      perror("pthread_attr_init");
+      perror("pthread_getschedparam");
       exit(EXIT_FAILURE);
     }
 
-    errno = pthread_attr_setschedpolicy(&pthread_attr, SCHED_FIFO);
-    if (errno != 0)
+    if (policy != SCHED_FIFO || param.sched_priority < 90)
     {
-      perror("pthread_attr_setschedpolicy");
-      exit(EXIT_FAILURE);
+      policy = SCHED_FIFO;
+      param.sched_priority = 90;
+      errno = pthread_setschedparam(pthread, policy, &param);
+      if (errno != 0)
+      {
+        perror("pthread_setschedparam");
+        exit(EXIT_FAILURE);
+      }
     }
 
-    sched_param sched_param
-    {
-      .sched_priority = 90
-    };
+    const ros::Time now = ros::Time::now();
+    const ros::Duration period((ev.current_real - ev.last_real).toSec());
+    // ROS_DEBUG("period: %lu us", period.toNSec() / 1000U);
 
-    errno = pthread_attr_setschedparam(&pthread_attr, &sched_param);
-    if(errno != 0)
-    {
-      perror("pthread_attr_setschedparam");
-      exit(EXIT_FAILURE);
-    }
+    read(now, period);
+    act_to_jnt_state_interface->propagate();
 
-    errno = pthread_attr_setinheritsched(&pthread_attr, PTHREAD_EXPLICIT_SCHED);
-    if (errno != 0)
-    {
-      perror("pthread_attr_setinheritsched");
-      exit(EXIT_FAILURE);
-    }
+    controller_manager->update(now, period, reset_controllers);
+    reset_controllers = false;
 
-    errno = pthread_create(&pthread, &pthread_attr, &esa::ewdl::ServoHW::pthread_fn, this);
-    if (errno != 0)
-    {
-      perror("pthread_create");
-      exit(EXIT_FAILURE);
-    }
-
-    // int policy;
-    // errno = pthread_attr_getschedpolicy(&pthread_attr, &policy);
-    // if (errno != 0)
-    // {
-    //   perror("pthread_attr_getschedpolicy");
-    //   exit(EXIT_FAILURE);
-    // }
-
-    // switch (policy)
-    // {
-    //   case SCHED_OTHER:
-    //     std::cout << "policy: " << "SCHED_OTHER" << std::endl;
-    //     break;
-    //   case SCHED_FIFO:
-    //     std::cout << "policy: " << "SCHED_FIFO" << std::endl;
-    //     break;
-    //   case SCHED_RR:
-    //     std::cout << "policy: " << "SCHED_RR" << std::endl;
-    //     break;
-    // }
-
-    errno = pthread_attr_destroy(&pthread_attr);
-    if (errno != 0)
-    {
-      perror("pthread_attr_destroy");
-      exit(EXIT_FAILURE);
-    }
-
-    void* res;
-    errno = pthread_join(pthread, &res);
-    if (errno != 0)
-    {
-      perror("pthread_join");
-      exit(EXIT_FAILURE);
-    }
-
-    free(res);
+    jnt_to_act_pos_interface->propagate();
+    write(now, period);
   }
-
 
 public:
 
-  bool reset_controllers = true;
+  struct {
+    bool ready_to_switch_on;
+    bool switched_on;
+    bool operation_enabled;
+    bool fault;
+    bool voltage_enabled;
+    bool quick_stop;
+    bool switch_on_disabled;
+    bool warning;
+    bool remote;
+    bool target_reached;
+    bool internal_limit_active;
+    bool homing_attained;
+    bool homing_error;
+    bool following_error;
+  } status;
 
-  unsigned short status_word;
-  int mode_of_operation_display;
+  bool reset_controllers = true;
 
   // Transmission Interface
   transmission_interface::ActuatorToJointStateInterface* act_to_jnt_state_interface;
@@ -436,8 +355,8 @@ public:
     {
       const uint16 slave_idx = 1 + i;
 
-      status_word = ec_master.tx_pdo[slave_idx].status_word;
-      mode_of_operation_display = ec_master.tx_pdo[slave_idx].mode_of_operation_display;
+      uint16 status_word = ec_master.tx_pdo[slave_idx].status_word;
+      int8 mode_of_operation_display = ec_master.tx_pdo[slave_idx].mode_of_operation_display;
       // ROS_DEBUG("Slave[%d], status_word: 0x%.4x", slave_idx, status_word);
       // ROS_DEBUG("Slave[%d], mode_of_operation display: %d", slave_idx, mode_of_operation_display);
 
@@ -445,8 +364,16 @@ public:
       status.switched_on = (status_word >> 1) & 0x01;
       status.operation_enabled = (status_word >> 2) & 0x01;
       status.fault = (status_word >> 3) & 0x01;
+      status.voltage_enabled = (status_word >> 4) & 0x01;
+      status.quick_stop = (status_word >> 5) & 0x01;
+      status.switch_on_disabled = (status_word >> 6) & 0x01;
+      status.warning = (status_word >> 7) & 0x01;
 
-      if (status.fault)
+      status.remote = (status_word >> 9) & 0x01;
+      status.target_reached = (status_word >> 10) & 0x01;
+      status.internal_limit_active = (status_word >> 11) & 0x01;
+
+      if (!status.operation_enabled)
       {
         reset_controllers = true;
       }
@@ -456,6 +383,12 @@ public:
         case esa::ewdl::ethercat::mode_of_operation_t::HOMING:
           status.homing_attained = (status_word >> 12) & 0x01;
           status.homing_error = (status_word >> 13) & 0x01;
+          break;
+        case esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_POSITION:
+          status.following_error = (status_word >> 13) & 0x01;
+          break;
+        case esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_VELOCITY:
+          status.following_error = (status_word >> 13) & 0x01;
           break;
       }
     }

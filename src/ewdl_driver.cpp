@@ -6,6 +6,8 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ros/callback_queue.h>
+// std_mags
+#include <std_msgs/Bool.h>
 // std_srvs
 #include <std_srvs/Trigger.h>
 // transmission_interface
@@ -112,8 +114,18 @@ int main (int argc, char* argv[])
   auto quick_stop_srv = node.advertiseService("quick_stop", &esa::ewdl::ServoHW::quick_stop, &servo_hw);
   auto set_zero_position_srv = node.advertiseService("set_zero_position", &esa::ewdl::ServoHW::set_zero_position, &servo_hw);
 
-  // Published Topics
-  // auto status_word_pub = node.advertise<std_msgs::Uint16>("status_word", 10);
+  // Advertised Topics
+  auto ready_to_switch_on_pub = node.advertise<std_msgs::Bool>("ready_to_switch_on", 1);
+  auto switched_on_pub = node.advertise<std_msgs::Bool>("switched_on", 1);
+  auto operation_enabled_pub = node.advertise<std_msgs::Bool>("operation_enabled", 1);
+  auto fault_pub = node.advertise<std_msgs::Bool>("fault", 1);
+  auto voltage_enabled_pub = node.advertise<std_msgs::Bool>("voltage_enabled", 1);
+  auto quick_stop_pub = node.advertise<std_msgs::Bool>("quick_stop", 1);
+  auto switch_on_disabled_pub = node.advertise<std_msgs::Bool>("switch_on_disabled", 1);
+  auto warning_pub = node.advertise<std_msgs::Bool>("warning", 1);
+
+  auto homing_attained_pub = node.advertise<std_msgs::Bool>("homing_attained", 1);
+  auto homing_error_pub = node.advertise<std_msgs::Bool>("homing_error", 1);
 
 
   if (servo_hw.start())
@@ -133,9 +145,38 @@ int main (int argc, char* argv[])
   {
     rate.sleep();
 
-    // std_msgs::Uint16 status_word_msg;
-    // status_word_msg.data = servo_hw.status_word;
-    // status_word_pub.publish(status_word_msg);
+    std_msgs::Bool msg;
+
+    msg.data = servo_hw.status.ready_to_switch_on;
+    ready_to_switch_on_pub.publish(msg);
+
+    msg.data = servo_hw.status.switched_on;
+    switched_on_pub.publish(msg);
+
+    msg.data = servo_hw.status.operation_enabled;
+    operation_enabled_pub.publish(msg);
+
+    msg.data = servo_hw.status.fault;
+    fault_pub.publish(msg);
+
+    msg.data = servo_hw.status.voltage_enabled;
+    voltage_enabled_pub.publish(msg);
+
+    msg.data = servo_hw.status.quick_stop;
+    quick_stop_pub.publish(msg);
+
+    msg.data = servo_hw.status.switch_on_disabled;
+    switch_on_disabled_pub.publish(msg);
+
+    msg.data = servo_hw.status.warning;
+    warning_pub.publish(msg);
+
+
+    msg.data = servo_hw.status.homing_attained;
+    homing_attained_pub.publish(msg);
+
+    msg.data = servo_hw.status.homing_error;
+    homing_error_pub.publish(msg);
   }
 
 
