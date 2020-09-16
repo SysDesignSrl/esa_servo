@@ -7,6 +7,8 @@
 #include <time.h>
 
 // STL
+#include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -43,6 +45,7 @@ private:
 
   esa::ewdl::ethercat::Master ec_master;
 
+  // std::ofstream logfile;
 
 protected:
 
@@ -410,6 +413,7 @@ public:
       // ROS_DEBUG_THROTTLE(1.0, "Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
       // ROS_DEBUG("Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
       // ROS_DEBUG("Slave[%d], mode_of_operation: %d", slave_idx, ec_master.rx_pdo[slave_idx].mode_of_operation);
+      ROS_DEBUG("%d %d", ec_master.tx_pdo[slave_idx].position_actual_value, ec_master.rx_pdo[slave_idx].target_position);
     }
 
     ec_master.update();
