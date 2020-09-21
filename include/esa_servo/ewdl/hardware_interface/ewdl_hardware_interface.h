@@ -318,6 +318,10 @@ public:
   bool switch_on(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
+  bool switch_off();
+  bool switch_off(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
+  /* */
   bool start_homing();
   bool start_homing(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 

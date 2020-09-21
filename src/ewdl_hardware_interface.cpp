@@ -138,6 +138,40 @@ bool esa::ewdl::ServoHW::switch_on(std_srvs::TriggerRequest &req, std_srvs::Trig
 }
 
 
+bool esa::ewdl::ServoHW::switch_off()
+{
+  if (ec_master.switch_off())
+  {
+    reset_controllers = true;
+
+    ROS_INFO("Switch Off");
+    return true;
+  }
+  else
+  {
+    ROS_ERROR("Failed to Switch Off");
+    return false;
+  }
+}
+
+
+bool esa::ewdl::ServoHW::switch_off(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (switch_off())
+  {
+    res.success = true;
+    res.message = "Switch Off";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Failed to Switch Off";
+  }
+
+  return true;
+}
+
+
 bool esa::ewdl::ServoHW::start_homing()
 {
   if (ec_master.start_homing())

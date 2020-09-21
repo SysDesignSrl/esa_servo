@@ -398,6 +398,18 @@ public:
   }
 
 
+  bool switch_off()
+  {
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
+    {
+      rx_pdo[slave_idx].control_word &= 0b1111111111111110;
+      rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
+    }
+
+    return true;
+  }
+
+
   // Starting the Homing Procedure
 
   /* Set the Homing Method required using OD entry 6098h. To start the homing
