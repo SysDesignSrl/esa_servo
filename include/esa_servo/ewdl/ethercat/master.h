@@ -518,16 +518,34 @@ public:
 
   int set_zero_position()
   {
-    for (uint16 slave = 1; slave <= ec_slavecount; slave++)
+    for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
       uint8 zero_position;
 
       zero_position = 0x01;
-      wkc += writeSDO<uint8>(slave, ZERO_POSITION_IDX, 0x00, zero_position);
+      wkc += writeSDO<uint8>(slave_idx, ZERO_POSITION_IDX, 0x00, zero_position);
 
       zero_position = 0x00;
-      wkc += writeSDO<uint8>(slave, ZERO_POSITION_IDX, 0x00, zero_position);
+      wkc += writeSDO<uint8>(slave_idx, ZERO_POSITION_IDX, 0x00, zero_position);
     }
+
+    return wkc;
+  }
+
+
+  int get_error_code(const uint16 slave_idx, uint16 &error_code)
+  {
+    wkc += readSDO<uint16>(slave_idx, ERROR_CODE_IDX, 0x00, error_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Error Code: 0x%.4X", wkc, slave_idx, ERROR_CODE_IDX, error_code);
+
+    return wkc;
+  }
+
+
+  int get_alarm_code(const uint16 slave_idx, uint32 &alarm_code)
+  {
+    wkc += readSDO<uint32>(slave_idx, ALARM_CODE_IDX, 0x00, alarm_code);
+    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Alarm Code: 0x%.8X", wkc, slave_idx, ALARM_CODE_IDX, alarm_code);
 
     return wkc;
   }

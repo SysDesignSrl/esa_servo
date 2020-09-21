@@ -342,6 +342,11 @@ public:
   bool set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
 
+  /* */
+  bool get_error_code(const uint16 slave_idx, uint16 &error_code);
+  bool get_alarm_code(const uint16 slave_idx, uint32 &alarm_code);
+
+
   void read(const ros::Time &time, const ros::Duration &period)
   {
     const int n_actuators = actuators.size();

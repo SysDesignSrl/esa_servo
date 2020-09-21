@@ -10,6 +10,10 @@
 #include <std_msgs/Bool.h>
 // std_srvs
 #include <std_srvs/Trigger.h>
+// industrial_msgs
+#include <industrial_msgs/RobotStatus.h>
+#include <industrial_msgs/RobotMode.h>
+#include <industrial_msgs/TriState.h>
 // transmission_interface
 #include <transmission_interface/robot_transmissions.h>
 #include <transmission_interface/transmission_interface.h>
@@ -128,6 +132,8 @@ int main (int argc, char* argv[])
   auto homing_attained_pub = node.advertise<std_msgs::Bool>("homing_attained", 1);
   auto homing_error_pub = node.advertise<std_msgs::Bool>("homing_error", 1);
 
+  auto status_pub = node.advertise<industrial_msgs::RobotStatus>("status", 10);
+
 
   if (servo_hw.start())
   {
@@ -145,6 +151,9 @@ int main (int argc, char* argv[])
   while (ros::ok())
   {
     rate.sleep();
+
+    const ros::Time time = ros::Time::now();
+
 
     std_msgs::Bool msg;
 
@@ -178,6 +187,33 @@ int main (int argc, char* argv[])
 
     msg.data = servo_hw.status.homing_error;
     homing_error_pub.publish(msg);
+
+
+    industrial_msgs::RobotStatus status_msg;
+    status_msg.header.stamp = time;
+    status_msg.mode.val = industrial_msgs::RobotMode::UNKNOWN;
+    status_msg.e_stopped.val = (!servo_hw.status.quick_stop) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
+    status_msg.drives_powered.val = (servo_hw.status.switched_on) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
+    status_msg.motion_possible.val = (servo_hw.status.operation_enabled) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
+    status_msg.in_motion.val = industrial_msgs::TriState::UNKNOWN;
+    status_msg.in_error.val = (servo_hw.status.fault) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
+    status_msg.error_code = 0;
+
+    if (servo_hw.status.fault)
+    {
+      uint16 error_code;
+      servo_hw.get_error_code(1, error_code);
+
+      status_msg.error_code = error_code;
+    }
+
+    if (servo_hw.status.warning)
+    {
+      uint32 alarm_code;
+      servo_hw.get_alarm_code(1, alarm_code);
+    }
+
+    status_pub.publish(status_msg);
   }
 
 

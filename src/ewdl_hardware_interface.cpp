@@ -334,3 +334,29 @@ bool esa::ewdl::ServoHW::set_zero_position(std_srvs::TriggerRequest &req, std_sr
 
   return true;
 }
+
+
+bool esa::ewdl::ServoHW::get_error_code(const uint16 slave_idx, uint16 &error_code)
+{
+  if (ec_master.get_error_code(slave_idx, error_code) > 0)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+
+bool esa::ewdl::ServoHW::get_alarm_code(const uint16 slave_idx, uint32 &alarm_code)
+{
+  if (ec_master.get_alarm_code(slave_idx, alarm_code) > 0)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}

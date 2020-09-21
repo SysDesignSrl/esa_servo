@@ -13,6 +13,7 @@
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
+  <depend>industrial_msgs</depend>
   <depend>controller_manager</depend>
   <depend>hardware_interface</depend>
   <depend>transmission_interface</depend>
