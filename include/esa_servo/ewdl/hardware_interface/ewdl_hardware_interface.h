@@ -358,7 +358,7 @@ public:
       const uint16 slave_idx = 1 + i;
 
       a_pos[i] = ec_master.tx_pdo[slave_idx].position_actual_value / POSITION_STEP_FACTOR;
-      // a_vel[i] = ec_master.tx_pdo[slave_idx].velocity_actual_value / VELOCITY_STEP_FACTOR;
+      a_vel[i] = ec_master.tx_pdo[slave_idx].velocity_actual_value / VELOCITY_STEP_FACTOR;
 
       //ROS_DEBUG_THROTTLE(1.0, "Slave[%d], status_word: 0x%.4x", slave_idx, ec_master.tx_pdo[slave_idx].status_word);
       //ROS_DEBUG_THROTTLE(1.0, "Slave[%d], mode_of_operation display: %d", slave_idx, ec_master.tx_pdo[slave_idx].mode_of_operation_display);
@@ -425,7 +425,7 @@ public:
       // ROS_DEBUG_THROTTLE(1.0, "Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
       // ROS_DEBUG("Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
       // ROS_DEBUG("Slave[%d], mode_of_operation: %d", slave_idx, ec_master.rx_pdo[slave_idx].mode_of_operation);
-      ROS_DEBUG("%d %d", ec_master.tx_pdo[slave_idx].position_actual_value, ec_master.rx_pdo[slave_idx].target_position);
+      // ROS_DEBUG("%d %d", ec_master.tx_pdo[slave_idx].position_actual_value, ec_master.rx_pdo[slave_idx].target_position);
     }
 
     ec_master.update();

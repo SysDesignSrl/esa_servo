@@ -243,13 +243,6 @@ public:
     uint32 status_code;
     wkc += readSDO<uint32>(slave_idx, STATUS_CODE_IDX, 0x00, status_code);
     ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Status Code: 0x%.4x", wkc, slave_idx, STATUS_CODE_IDX, status_code);
-
-    // Following Error Window
-    uint32 following_error_window = 1000;
-    wkc += writeSDO<uint32>(slave_idx, FOLLOWING_ERROR_WINDOW_IDX, 0x00, following_error_window);
-
-    wkc += readSDO<uint32>(slave_idx, FOLLOWING_ERROR_WINDOW_IDX, 0x00, status_code);
-    ROS_DEBUG("WKC: %d\tSlave[%u] SDO 0x%.4X Following Error Window: %d", wkc, slave_idx, FOLLOWING_ERROR_WINDOW_IDX, following_error_window);
   }
 
   // Following Error Window
@@ -402,7 +395,7 @@ public:
   {
     for (uint16 slave_idx = 1; slave_idx <= ec_slavecount; slave_idx++)
     {
-      rx_pdo[slave_idx].control_word &= 0b1111111111111110;
+      rx_pdo[slave_idx].control_word &= 0xFFFE;
       rx_pdo[slave_idx].mode_of_operation = mode_of_operation_t::HOMING;
     }
 
