@@ -6,10 +6,14 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ros/callback_queue.h>
-// std_msgs
+// std_mags
 #include <std_msgs/Bool.h>
 // std_srvs
 #include <std_srvs/Trigger.h>
+// industrial_msgs
+#include <industrial_msgs/RobotStatus.h>
+#include <industrial_msgs/RobotMode.h>
+#include <industrial_msgs/TriState.h>
 // transmission_interface
 #include <transmission_interface/robot_transmissions.h>
 #include <transmission_interface/transmission_interface.h>
@@ -19,51 +23,6 @@
 
 // esa_servo
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
-
-
-class HomingChecker {
-
-  ros::NodeHandle node;
-
-  ros::Timer homing_checker_timer;
-
-  ros::Publisher homing_attained_pub;
-  ros::Publisher homing_error_pub;
-
-public:
-
-  HomingChecker(const ros::NodeHandle &node = ros::NodeHandle()) :
-    node(node) { }
-
-  void start()
-  {
-    homing_attained_pub = node.advertise<std_msgs::Bool>("homing_attained", 1, true);
-    homing_error_pub = node.advertise<std_msgs::Bool>("homing_error", 1, true);
-
-    ros::Duration period(0.5);
-    homing_checker_timer = node.createTimer(period, &HomingChecker::homing_check_cb, this, false, true);
-  }
-
-  void homing_check_cb(const ros::TimerEvent &ev)
-  {
-    bool homing_attained;
-    if (node.getParam("homing_attained", homing_attained))
-    {
-      std_msgs::Bool msg;
-      msg.data = homing_attained;
-      homing_attained_pub.publish(msg);
-    }
-
-    bool homing_error;
-    if (node.getParam("homing_error", homing_error))
-    {
-      std_msgs::Bool msg;
-      msg.data = homing_error;
-      homing_error_pub.publish(msg);
-    }
-  }
-
-};
 
 
 int main (int argc, char* argv[])
@@ -76,12 +35,10 @@ int main (int argc, char* argv[])
   ros::CallbackQueue callback_queue;
   node.setCallbackQueue(&callback_queue);
 
-  // Homing Checker
-  HomingChecker homing_checker(node);
-  homing_checker.start();
-
 
   // Parameters
+  auto freq = node.param<double>("publish_frequency", 10);
+
   std::string urdf;
   if (!ros::param::get("robot_description", urdf))
   {
@@ -147,16 +104,36 @@ int main (int argc, char* argv[])
     return 1;
   }
 
+  // Controller Manager
+  // controller_manager::ControllerManager controller_manager(&servo_hw, node);
+
+
   // Advertised Services
   auto start_srv = node.advertiseService("start", &esa::ewdl::ServoHW::start, &servo_hw);
   auto fault_reset_srv = node.advertiseService("fault_reset", &esa::ewdl::ServoHW::fault_reset, &servo_hw);
   auto ready_to_switch_on_srv = node.advertiseService("ready_to_switch_on", &esa::ewdl::ServoHW::ready_to_switch_on, &servo_hw);
   auto switch_on_srv = node.advertiseService("switch_on", &esa::ewdl::ServoHW::switch_on, &servo_hw);
+  auto switch_off_srv = node.advertiseService("switch_off", &esa::ewdl::ServoHW::switch_off, &servo_hw);
   auto start_homing_srv = node.advertiseService("start_homing", &esa::ewdl::ServoHW::start_homing, &servo_hw);
   auto start_motion_srv = node.advertiseService("start_motion", &esa::ewdl::ServoHW::start_motion, &servo_hw);
   auto halt_srv = node.advertiseService("halt", &esa::ewdl::ServoHW::halt, &servo_hw);
   auto quick_stop_srv = node.advertiseService("quick_stop", &esa::ewdl::ServoHW::quick_stop, &servo_hw);
   auto set_zero_position_srv = node.advertiseService("set_zero_position", &esa::ewdl::ServoHW::set_zero_position, &servo_hw);
+
+  // Advertised Topics
+  auto ready_to_switch_on_pub = node.advertise<std_msgs::Bool>("ready_to_switch_on", 1);
+  auto switched_on_pub = node.advertise<std_msgs::Bool>("switched_on", 1);
+  auto operation_enabled_pub = node.advertise<std_msgs::Bool>("operation_enabled", 1);
+  auto fault_pub = node.advertise<std_msgs::Bool>("fault", 1);
+  auto voltage_enabled_pub = node.advertise<std_msgs::Bool>("voltage_enabled", 1);
+  auto quick_stop_pub = node.advertise<std_msgs::Bool>("quick_stop", 1);
+  auto switch_on_disabled_pub = node.advertise<std_msgs::Bool>("switch_on_disabled", 1);
+  auto warning_pub = node.advertise<std_msgs::Bool>("warning", 1);
+
+  auto homing_attained_pub = node.advertise<std_msgs::Bool>("homing_attained", 1);
+  auto homing_error_pub = node.advertise<std_msgs::Bool>("homing_error", 1);
+
+  auto status_pub = node.advertise<industrial_msgs::RobotStatus>("status", 10);
 
 
   if (servo_hw.start())
@@ -170,6 +147,77 @@ int main (int argc, char* argv[])
   }
 
 
-  ros::waitForShutdown();
+  // Loop
+  ros::Rate rate(freq);
+  while (ros::ok())
+  {
+    rate.sleep();
+
+    const ros::Time time = ros::Time::now();
+
+
+    std_msgs::Bool msg;
+
+    msg.data = servo_hw.status.ready_to_switch_on;
+    ready_to_switch_on_pub.publish(msg);
+
+    msg.data = servo_hw.status.switched_on;
+    switched_on_pub.publish(msg);
+
+    msg.data = servo_hw.status.operation_enabled;
+    operation_enabled_pub.publish(msg);
+
+    msg.data = servo_hw.status.fault;
+    fault_pub.publish(msg);
+
+    msg.data = servo_hw.status.voltage_enabled;
+    voltage_enabled_pub.publish(msg);
+
+    msg.data = servo_hw.status.quick_stop;
+    quick_stop_pub.publish(msg);
+
+    msg.data = servo_hw.status.switch_on_disabled;
+    switch_on_disabled_pub.publish(msg);
+
+    msg.data = servo_hw.status.warning;
+    warning_pub.publish(msg);
+
+
+    msg.data = servo_hw.status.homing_attained;
+    homing_attained_pub.publish(msg);
+
+    msg.data = servo_hw.status.homing_error;
+    homing_error_pub.publish(msg);
+
+
+    industrial_msgs::RobotStatus status_msg;
+    status_msg.header.stamp = time;
+    status_msg.mode.val = industrial_msgs::RobotMode::UNKNOWN;
+    status_msg.e_stopped.val = (!servo_hw.status.quick_stop) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
+    status_msg.drives_powered.val = (servo_hw.status.switched_on) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
+    status_msg.motion_possible.val = (servo_hw.status.operation_enabled) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
+    status_msg.in_motion.val = industrial_msgs::TriState::UNKNOWN;
+    status_msg.in_error.val = (servo_hw.status.fault) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
+    status_msg.error_code = 0;
+
+    if (servo_hw.status.fault)
+    {
+      uint16 error_code;
+      servo_hw.get_error_code(1, error_code);
+
+      status_msg.error_code = error_code;
+    }
+
+    if (servo_hw.status.warning)
+    {
+      uint32 alarm_code;
+      servo_hw.get_alarm_code(1, alarm_code);
+    }
+
+    status_pub.publish(status_msg);
+  }
+
+
+  servo_hw.close();
   return 0;
 }

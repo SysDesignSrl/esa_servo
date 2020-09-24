@@ -6,8 +6,6 @@ bool esa::ewdl::ServoHW::start()
   if (ec_master.start())
   {
     reset_controllers = true;
-
-    control_time = ros::Time::now();
     control_loop.start();
 
     ROS_INFO("EtherCAT OPERATIONAL");
@@ -140,6 +138,40 @@ bool esa::ewdl::ServoHW::switch_on(std_srvs::TriggerRequest &req, std_srvs::Trig
 }
 
 
+bool esa::ewdl::ServoHW::switch_off()
+{
+  if (ec_master.switch_off())
+  {
+    reset_controllers = true;
+
+    ROS_INFO("Switch Off");
+    return true;
+  }
+  else
+  {
+    ROS_ERROR("Failed to Switch Off");
+    return false;
+  }
+}
+
+
+bool esa::ewdl::ServoHW::switch_off(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (switch_off())
+  {
+    res.success = true;
+    res.message = "Switch Off";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Failed to Switch Off";
+  }
+
+  return true;
+}
+
+
 bool esa::ewdl::ServoHW::start_homing()
 {
   if (ec_master.start_homing())
@@ -178,7 +210,7 @@ bool esa::ewdl::ServoHW::start_motion()
 {
   if (ec_master.start_cyclic_syncronous_velocity())
   {
-    reset_controllers = false;
+    reset_controllers = true;
 
     ROS_INFO("Motion started.");
     return true;
@@ -301,4 +333,30 @@ bool esa::ewdl::ServoHW::set_zero_position(std_srvs::TriggerRequest &req, std_sr
   }
 
   return true;
+}
+
+
+bool esa::ewdl::ServoHW::get_error_code(const uint16 slave_idx, uint16 &error_code)
+{
+  if (ec_master.get_error_code(slave_idx, error_code) > 0)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+
+bool esa::ewdl::ServoHW::get_alarm_code(const uint16 slave_idx, uint32 &alarm_code)
+{
+  if (ec_master.get_alarm_code(slave_idx, alarm_code) > 0)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
