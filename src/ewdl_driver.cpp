@@ -200,19 +200,19 @@ int main (int argc, char* argv[])
     status_msg.in_error.val = (servo_hw.status.fault) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
     status_msg.error_code = 0;
 
-    if (servo_hw.status.fault)
-    {
-      uint16 error_code;
-      servo_hw.get_error_code(1, error_code);
-
-      status_msg.error_code = error_code;
-    }
-
-    if (servo_hw.status.warning)
-    {
-      uint32 alarm_code;
-      servo_hw.get_alarm_code(1, alarm_code);
-    }
+    // if (servo_hw.status.fault)
+    // {
+    //   uint16 error_code;
+    //   servo_hw.get_error_code(1, error_code);
+    //
+    //   status_msg.error_code = error_code;
+    // }
+    //
+    // if (servo_hw.status.warning)
+    // {
+    //   uint32 alarm_code;
+    //   servo_hw.get_alarm_code(1, alarm_code);
+    // }
 
     status_pub.publish(status_msg);
   }

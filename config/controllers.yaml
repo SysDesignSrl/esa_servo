@@ -20,5 +20,5 @@ rail:
         rail_joint: { goal: 0.01, trajectory: 0.02 }
         stopped_velocity_tolerance: 0.05
       gains:
-        rail_joint: { p: 11.0, i: 0.0, d: 0.0, i_clamp: 0.0 }
+        rail_joint: { p: 25.0, i: 0.0, d: 0.0, i_clamp: 0.0 }
       stop_trajectory_duration: 1.0
