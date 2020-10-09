@@ -11,12 +11,12 @@
   <rosparam command="load" file="$(find esa_servo)/config/joint_limits.yaml" />
 
   <!-- -->
-  <node name="ewdl_driver" launch-prefix="ethercat_grant" pkg="esa_servo" type="ewdl_driver" output="screen">
+  <node name="ewdl_driver" launch-prefix="ethercat_grant" pkg="esa_servo" type="ewdl_driver" output="log">
     <rosparam command="load" ns="ethercat" file="$(arg ethercat_config)"/>
   </node>
 
   <!-- -->
-  <node ns="ewdl_driver" name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"
+  <node ns="ewdl_driver" name="controller_spawner" pkg="controller_manager" type="spawner" output="log"
     args="/rail/controller/state
           /rail/controller/rail_controller" />
 
