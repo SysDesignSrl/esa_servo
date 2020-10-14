@@ -1,7 +1,14 @@
+#include <pthread.h>
+#include <sched.h>
+#include <unistd.h>
+#include <errno.h>
+#include <time.h>
+
 // STL
 #include <string>
 #include <vector>
-
+#include <chrono>
+#include <thread>
 // roscpp
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -23,6 +30,34 @@
 
 // esa_servo
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
+
+
+void* control_loop_routine(void* arg)
+{
+  esa::ewdl::ServoHW* servo_hw = (esa::ewdl::ServoHW*)arg;
+
+  auto prev_time = std::chrono::steady_clock::now();
+  while (ros::ok())
+  {
+    std::this_thread::sleep_until(prev_time + std::chrono::microseconds(4000));
+    auto curr_time = std::chrono::steady_clock::now();
+
+    const ros::Time now = ros::Time::now();
+    const ros::Duration period((prev_time - curr_time).count() / 1000000000.0);
+    // ROS_DEBUG("period: %lu us", period.toNSec() / 1000U);
+
+    servo_hw->read(now, period);
+    servo_hw->act_to_jnt_state_interface->propagate();
+
+    servo_hw->controller_manager->update(now, period, servo_hw->reset_controllers);
+    servo_hw->reset_controllers = false;
+
+    servo_hw->jnt_to_act_pos_interface->propagate();
+    servo_hw->write(now, period);
+
+    prev_time = curr_time;
+  }
+}
 
 
 int main (int argc, char* argv[])
@@ -143,6 +178,40 @@ int main (int argc, char* argv[])
   {
     ROS_FATAL("Failed to start Hardware Interface");
     return 1;
+  }
+
+
+  pthread_t pthread;
+  pthread_attr_t pthread_attr;
+
+  errno = pthread_attr_init(&pthread_attr);
+  if (errno != 0)
+  {
+    perror("pthread_attr_init");
+    exit(EXIT_FAILURE);
+  }
+
+  errno = pthread_create(&pthread, &pthread_attr, &control_loop_routine, &servo_hw);
+  if (errno != 0)
+  {
+    perror("pthread_create");
+    exit(EXIT_FAILURE);
+  }
+
+  int policy = SCHED_FIFO;
+  sched_param param { .sched_priority = 90 };
+  errno = pthread_setschedparam(pthread, policy, &param);
+  if (errno != 0)
+  {
+    perror("pthread_setschedparam");
+    exit(EXIT_FAILURE);
+  }
+
+  errno = pthread_attr_destroy(&pthread_attr);
+  if (errno != 0)
+  {
+    perror("pthread_attr_destroy");
+    exit(EXIT_FAILURE);
   }
 
 

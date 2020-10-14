@@ -52,9 +52,6 @@ protected:
   ros::NodeHandle node;
   ros::SteadyTimer control_loop;
 
-  // Controller Manager
-  std::shared_ptr<controller_manager::ControllerManager> controller_manager;
-
   // Hardware Interface
   hardware_interface::ActuatorStateInterface act_state_interface;
   hardware_interface::PositionActuatorInterface pos_act_interface;
@@ -113,6 +110,9 @@ protected:
   }
 
 public:
+
+  // Controller Manager
+  std::shared_ptr<controller_manager::ControllerManager> controller_manager;
 
   struct {
     bool ready_to_switch_on;
