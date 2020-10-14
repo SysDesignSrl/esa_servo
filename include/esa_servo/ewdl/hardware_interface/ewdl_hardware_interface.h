@@ -45,8 +45,6 @@ private:
 
   esa::ewdl::ethercat::Master ec_master;
 
-  // std::ofstream logfile;
-
 protected:
 
   ros::NodeHandle node;
@@ -111,7 +109,8 @@ protected:
 
 public:
 
-  // Controller Manager
+  double loop_hz;
+
   std::shared_ptr<controller_manager::ControllerManager> controller_manager;
 
   struct {
@@ -221,6 +220,8 @@ public:
 
   bool init(double loop_hz, const std::vector<std::string> &joints, const std::vector<std::string> &actuators)
   {
+    this->loop_hz = loop_hz;
+
     this->joints = joints;
     this->actuators = actuators;
 
@@ -422,7 +423,7 @@ public:
       // ROS_DEBUG_THROTTLE(1.0, "Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
       // ROS_DEBUG("Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
       // ROS_DEBUG("Slave[%d], mode_of_operation: %d", slave_idx, ec_master.rx_pdo[slave_idx].mode_of_operation);
-      ROS_DEBUG("%d %d", ec_master.tx_pdo[slave_idx].position_actual_value, ec_master.rx_pdo[slave_idx].target_position);
+      // ROS_DEBUG("%d %d", ec_master.tx_pdo[slave_idx].position_actual_value, ec_master.rx_pdo[slave_idx].target_position);
     }
 
     ec_master.update();
@@ -431,7 +432,7 @@ public:
 
   void close()
   {
-    control_loop.stop();
+    // control_loop.stop();
 
     ec_master.close();
     ROS_INFO("EtherCAT socket closed.");

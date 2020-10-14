@@ -36,14 +36,15 @@ void* control_loop_routine(void* arg)
 {
   esa::ewdl::ServoHW* servo_hw = (esa::ewdl::ServoHW*)arg;
 
-  auto prev_time = std::chrono::steady_clock::now();
+  ros::WallRate rate(servo_hw->loop_hz);
+  ros::SteadyTime prev_time = ros::SteadyTime::now();
   while (ros::ok())
   {
-    std::this_thread::sleep_until(prev_time + std::chrono::microseconds(4000));
-    auto curr_time = std::chrono::steady_clock::now();
+    rate.sleep();
+    ros::SteadyTime curr_time = ros::SteadyTime::now();
 
     const ros::Time now = ros::Time::now();
-    const ros::Duration period((prev_time - curr_time).count() / 1000000000.0);
+    const ros::Duration period((curr_time - prev_time).toSec());
     // ROS_DEBUG("period: %lu us", period.toNSec() / 1000U);
 
     servo_hw->read(now, period);
@@ -137,10 +138,6 @@ int main (int argc, char* argv[])
     ROS_FATAL("Failed to load Transmission Interface from URDF");
     return 1;
   }
-
-  // Controller Manager
-  // controller_manager::ControllerManager controller_manager(&servo_hw, node);
-
 
   // Advertised Services
   auto start_srv = node.advertiseService("start", &esa::ewdl::ServoHW::start, &servo_hw);
@@ -268,19 +265,19 @@ int main (int argc, char* argv[])
     status_msg.in_error.val = (servo_hw.status.fault) ? industrial_msgs::TriState::ON : industrial_msgs::TriState::OFF;
     status_msg.error_code = 0;
 
-    if (servo_hw.status.fault)
-    {
-      uint16 error_code;
-      servo_hw.get_error_code(1, error_code);
-
-      status_msg.error_code = error_code;
-    }
-
-    if (servo_hw.status.warning)
-    {
-      uint32 alarm_code;
-      servo_hw.get_alarm_code(1, alarm_code);
-    }
+    // if (servo_hw.status.fault)
+    // {
+    //   uint16 error_code;
+    //   servo_hw.get_error_code(1, error_code);
+    //
+    //   status_msg.error_code = error_code;
+    // }
+    //
+    // if (servo_hw.status.warning)
+    // {
+    //   uint32 alarm_code;
+    //   servo_hw.get_alarm_code(1, alarm_code);
+    // }
 
     status_pub.publish(status_msg);
   }

@@ -2,7 +2,7 @@
 ## EtherCAT Master ##
 #####################
 
-ifname: enp7s0f1
+ifname: eno1
   # EtherCAT Master interface
 slaves:
   - device_name: "EWDL Servo"
@@ -10,7 +10,7 @@ slaves:
     homing_method: 1                    #
     homing_speed: [ 50000, 20000 ]      # Homing Speed to switch and to return to zero.
     homing_acceleration: 1000000        #
-    home_offset: 1750                   #
+    home_offset: 0                      #
     home_switch: 0x08                   #
     # Following Error Window
     following_error_window: 10000       # Range of tolerated position values respect to the commanded position value.
