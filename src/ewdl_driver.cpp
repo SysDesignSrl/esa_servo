@@ -179,16 +179,8 @@ int main (int argc, char* argv[])
 
 
   pthread_t pthread;
-  pthread_attr_t pthread_attr;
 
-  errno = pthread_attr_init(&pthread_attr);
-  if (errno != 0)
-  {
-    perror("pthread_attr_init");
-    exit(EXIT_FAILURE);
-  }
-
-  errno = pthread_create(&pthread, &pthread_attr, &control_loop_routine, &servo_hw);
+  errno = pthread_create(&pthread, NULL, &control_loop_routine, &servo_hw);
   if (errno != 0)
   {
     perror("pthread_create");
@@ -201,13 +193,6 @@ int main (int argc, char* argv[])
   if (errno != 0)
   {
     perror("pthread_setschedparam");
-    exit(EXIT_FAILURE);
-  }
-
-  errno = pthread_attr_destroy(&pthread_attr);
-  if (errno != 0)
-  {
-    perror("pthread_attr_destroy");
     exit(EXIT_FAILURE);
   }
 
