@@ -1,17 +1,13 @@
 #ifndef ESA_EWDL_HARDWARE_INTERFACE_H
 #define ESA_EWDL_HARDWARE_INTERFACE_H
-#include <pthread.h>
-#include <sched.h>
-#include <unistd.h>
-#include <errno.h>
-#include <time.h>
-
-// STL
-#include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
-
+// Unix
+#include <unistd.h>
+#include <pthread.h>
+#include <sched.h>
+#include <time.h>
+#include <errno.h>
 // roscpp
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -29,26 +25,27 @@
 // xmlrpcpp
 #include <XmlRpcValue.h>
 #include <XmlRpcException.h>
-
 // esa_servo
 #include "esa_servo/ewdl/ethercat/master.h"
+#include "esa_servo/ewdl/ethercat/time.h"
+
+#define POSITION_STEP_FACTOR  10000.0
+#define VELOCITY_STEP_FACTOR  10000.0
 
 
 namespace esa { namespace ewdl {
 
-static const double POSITION_STEP_FACTOR = 10000.0;
-static const double VELOCITY_STEP_FACTOR = 10000.0;
+void* control_loop(void* arg);
 
 
 class ServoHW : public hardware_interface::RobotHW {
 private:
 
-  esa::ewdl::ethercat::Master ec_master;
+
 
 protected:
 
   ros::NodeHandle node;
-  ros::SteadyTimer control_loop;
 
   // Hardware Interface
   hardware_interface::ActuatorStateInterface act_state_interface;
@@ -58,60 +55,24 @@ protected:
   std::vector<std::string> joints;
   std::vector<std::string> actuators;
 
-  //
   std::vector<double> a_pos, a_pos_cmd;
   std::vector<double> a_vel, a_vel_cmd;
   std::vector<double> a_eff, a_eff_cmd;
 
-  //
   std::vector<double> joint_lower_limits;
   std::vector<double> joint_upper_limits;
-
-
-  void control_loop_cb(const ros::SteadyTimerEvent &ev)
-  {
-    pthread_t pthread = pthread_self();
-    sched_param param;
-    int policy;
-
-    errno = pthread_getschedparam(pthread, &policy, &param);
-    if (errno != 0)
-    {
-      perror("pthread_getschedparam");
-      exit(EXIT_FAILURE);
-    }
-
-    if (policy != SCHED_FIFO || param.sched_priority < 90)
-    {
-      policy = SCHED_FIFO;
-      param.sched_priority = 90;
-      errno = pthread_setschedparam(pthread, policy, &param);
-      if (errno != 0)
-      {
-        perror("pthread_setschedparam");
-        exit(EXIT_FAILURE);
-      }
-    }
-
-    const ros::Time now = ros::Time::now();
-    const ros::Duration period((ev.current_real - ev.last_real).toSec());
-    // ROS_DEBUG("period: %lu us", period.toNSec() / 1000U);
-
-    read(now, period);
-    act_to_jnt_state_interface->propagate();
-
-    controller_manager->update(now, period, reset_controllers);
-    reset_controllers = false;
-
-    jnt_to_act_pos_interface->propagate();
-    write(now, period);
-  }
 
 public:
 
   double loop_hz;
+  esa::ewdl::ethercat::Master ec_master;
 
+  bool reset_controllers = true;
   std::shared_ptr<controller_manager::ControllerManager> controller_manager;
+
+  transmission_interface::ActuatorToJointStateInterface* act_to_jnt_state_interface;
+  transmission_interface::JointToActuatorPositionInterface* jnt_to_act_pos_interface;
+  transmission_interface::JointToActuatorVelocityInterface* jnt_to_act_vel_interface;
 
   struct {
     bool ready_to_switch_on;
@@ -130,22 +91,14 @@ public:
     bool following_error;
   } status;
 
-  bool reset_controllers = true;
+  ServoHW(ros::NodeHandle &node) :
+    node(node),
+    controller_manager(new controller_manager::ControllerManager(this, node)) { }
 
-  // Transmission Interface
-  transmission_interface::ActuatorToJointStateInterface* act_to_jnt_state_interface;
-  transmission_interface::JointToActuatorPositionInterface* jnt_to_act_pos_interface;
 
-  ServoHW(ros::NodeHandle &node) : node(node),
-  controller_manager(new controller_manager::ControllerManager(this, node))
+  bool init_ethercat(unsigned long cycletime, const std::string &ifname, const std::vector<std::string> &slaves)
   {
-
-  }
-
-
-  bool init_ethercat(const std::string &ifname, const std::vector<std::string> &slaves)
-  {
-    ec_master = esa::ewdl::ethercat::Master(ifname, slaves);
+    ec_master = esa::ewdl::ethercat::Master(cycletime, ifname, slaves);
 
     if (ec_master.init())
     {
@@ -176,16 +129,9 @@ public:
         int homing_speed_to_switch = slaves_param[i]["homing_speed"][0];
         int homing_speed_to_zero = slaves_param[i]["homing_speed"][1];
         int homing_acceleration = slaves_param[i]["homing_acceleration"];
-
         int home_offset = slaves_param[i]["home_offset"];
         int home_switch = slaves_param[i]["home_switch"];
-
         int following_error_window = slaves_param[i]["following_error_window"];
-
-        int in_position_counts = slaves_param[i]["in_position_counts"];
-        int in_position_error_range = slaves_param[i]["in_position_error_range"];
-        int in_position_timing = slaves_param[i]["in_position_timing"];
-
         int quickstop_deceleration = slaves_param[i]["quickstop_deceleration"];
 
         const uint16 slave_idx = 1 + i;
@@ -195,15 +141,11 @@ public:
         ROS_DEBUG("EtherCAT Slave[%d] Home Offset: %d", slave_idx, home_offset);
         ROS_DEBUG("EtherCAT Slave[%d] Home Switch: 0x%.2x", slave_idx, home_switch);
         ROS_DEBUG("EtherCAT Slave[%d] Following Error Window: %u", slave_idx, following_error_window);
-        ROS_DEBUG("EtherCAT Slave[%d] In Position Counts: %u", slave_idx, in_position_counts);
-        ROS_DEBUG("EtherCAT Slave[%d] In Position Error Range: %u", slave_idx, in_position_error_range);
-        ROS_DEBUG("EtherCAT Slave[%d] In Position Timing: %u", slave_idx, in_position_timing);
         ROS_DEBUG("EtherCAT Slave[%d] QuickStop Deceleration: %u", slave_idx, quickstop_deceleration);
 
         ec_master.config_homing(slave_idx, homing_method, homing_speed_to_switch, homing_speed_to_zero, homing_acceleration, home_offset, home_switch);
-        ec_master.config_following_error_window(slave_idx, following_error_window);
-        ec_master.config_in_position(slave_idx, in_position_counts, in_position_error_range, in_position_timing);
-        ec_master.config_quickstop(slave_idx, quickstop_deceleration);
+        ec_master.set_following_error_window(slave_idx, following_error_window);
+        ec_master.set_quickstop_deceleration(slave_idx, quickstop_deceleration);
       }
       catch (const XmlRpc::XmlRpcException &ex)
       {
@@ -221,11 +163,12 @@ public:
   bool init(double loop_hz, const std::vector<std::string> &joints, const std::vector<std::string> &actuators)
   {
     this->loop_hz = loop_hz;
-
     this->joints = joints;
     this->actuators = actuators;
 
     // EtherCAT
+    unsigned long cycletime = (1.0 / loop_hz) * 1000000000U;
+
     std::string ifname;
     if (!node.getParam("ethercat/ifname", ifname))
     {
@@ -258,7 +201,7 @@ public:
       }
     }
 
-    if (!init_ethercat(ifname, slaves))
+    if (!init_ethercat(cycletime, ifname, slaves))
     {
       ROS_ERROR("Failed to initialize EtherCAT master");
       close();
@@ -271,10 +214,6 @@ public:
       close();
       return false;
     }
-
-    //
-    ros::WallDuration period(1.0/loop_hz);
-    control_loop = node.createSteadyTimer(period, &esa::ewdl::ServoHW::control_loop_cb, this, false, false);
 
     // Hardware Interface
     const int n_actuators = actuators.size();
@@ -297,14 +236,77 @@ public:
 
     registerInterface(&act_state_interface);
     registerInterface(&pos_act_interface);
+    registerInterface(&vel_act_interface);
 
     return true;
   }
 
 
-  /* */
-  bool start();
-  bool start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+  bool start()
+  {
+    if (!ec_master.start())
+    {
+      return false;
+    }
+
+    pthread_t pthread;
+    pthread_attr_t pthread_attr;
+
+    errno = pthread_attr_init(&pthread_attr);
+    if (errno != 0)
+    {
+      ROS_FATAL("pthread_attr_init");
+      return false;
+    }
+
+    cpu_set_t cpu_set;
+    CPU_ZERO(&cpu_set); CPU_SET(1, &cpu_set);
+    errno = pthread_attr_setaffinity_np(&pthread_attr, sizeof(cpu_set), &cpu_set);
+    if (errno != 0)
+    {
+      ROS_FATAL("pthread_attr_setaffinity_np");
+      return false;
+    }
+
+    errno = pthread_attr_setinheritsched(&pthread_attr, PTHREAD_EXPLICIT_SCHED);
+    if (errno != 0)
+    {
+      ROS_FATAL("pthread_attr_setschedpolicy");
+      return false;
+    }
+
+    errno = pthread_attr_setschedpolicy(&pthread_attr, SCHED_FIFO);
+    if (errno != 0)
+    {
+      ROS_FATAL("pthread_attr_setschedpolicy");
+      return false;
+    }
+
+    sched_param sched_param
+    {
+      .sched_priority = 80
+    };
+    errno = pthread_attr_setschedparam(&pthread_attr, &sched_param);
+    if (errno != 0)
+    {
+      ROS_FATAL("pthread_attr_setschedparam");
+      return false;
+    }
+
+    errno = pthread_create(&pthread, &pthread_attr, &control_loop, this);
+    if (errno != 0)
+    {
+      ROS_FATAL("pthread_create");
+      return false;
+    }
+
+    errno = pthread_attr_destroy(&pthread_attr);
+    if (errno != 0)
+    {
+      ROS_FATAL("pthread_attr_destroy");
+      return false;
+    }
+  }
 
   /* */
   bool fault_reset();
@@ -321,6 +323,10 @@ public:
   /* */
   bool switch_off();
   bool switch_off(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
+  /**/
+  bool enable_operation();
+  bool enable_operation(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
   bool start_homing();
@@ -342,7 +348,6 @@ public:
   bool set_zero_position();
   bool set_zero_position(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
-
   /* */
   bool get_error_code(const uint16 slave_idx, uint16 &error_code);
   bool get_alarm_code(const uint16 slave_idx, uint32 &alarm_code);
@@ -355,23 +360,9 @@ public:
     for (int i = 0; i < n_actuators; i++)
     {
       const uint16 slave_idx = 1 + i;
-
-      a_pos[i] = ec_master.tx_pdo[slave_idx].position_actual_value / POSITION_STEP_FACTOR;
-
-      //ROS_DEBUG_THROTTLE(1.0, "Slave[%d], status_word: 0x%.4x", slave_idx, ec_master.tx_pdo[slave_idx].status_word);
-      //ROS_DEBUG_THROTTLE(1.0, "Slave[%d], mode_of_operation display: %d", slave_idx, ec_master.tx_pdo[slave_idx].mode_of_operation_display);
-      //ROS_DEBUG_THROTTLE(1.0, "Slave[%d], position_actual_value: %d", slave_idx, ec_master.tx_pdo[slave_idx].position_actual_value);
-      //ROS_DEBUG_THROTTLE(1.0, "Slave[%d], digital_inputs: 0x%.8x", slave_idx, ec_master.tx_pdo[slave_idx].digital_inputs);
-    }
-
-    for (int i = 0; i < n_actuators; i++)
-    {
-      const uint16 slave_idx = 1 + i;
-
       uint16 status_word = ec_master.tx_pdo[slave_idx].status_word;
       int8 mode_of_operation_display = ec_master.tx_pdo[slave_idx].mode_of_operation_display;
-      // ROS_DEBUG("Slave[%d], status_word: 0x%.4x", slave_idx, status_word);
-      // ROS_DEBUG("Slave[%d], mode_of_operation display: %d", slave_idx, mode_of_operation_display);
+      int32 position_actual_value = ec_master.tx_pdo[slave_idx].position_actual_value / POSITION_STEP_FACTOR;
 
       status.ready_to_switch_on = (status_word >> 0) & 0x01;
       status.switched_on = (status_word >> 1) & 0x01;
@@ -381,7 +372,6 @@ public:
       status.quick_stop = (status_word >> 5) & 0x01;
       status.switch_on_disabled = (status_word >> 6) & 0x01;
       status.warning = (status_word >> 7) & 0x01;
-
       status.remote = (status_word >> 9) & 0x01;
       status.target_reached = (status_word >> 10) & 0x01;
       status.internal_limit_active = (status_word >> 11) & 0x01;
@@ -404,6 +394,8 @@ public:
           status.following_error = (status_word >> 13) & 0x01;
           break;
       }
+
+      a_pos[i] = position_actual_value;
     }
   }
 
@@ -415,15 +407,9 @@ public:
     for (int i = 0; i < n_actuators; i++)
     {
       const uint16 slave_idx = 1 + i;
-
       ec_master.rx_pdo[slave_idx].target_position = a_pos_cmd[i] * POSITION_STEP_FACTOR;
       ec_master.rx_pdo[slave_idx].touch_probe_function = 0;
       ec_master.rx_pdo[slave_idx].physical_outputs = 0x0000;
-
-      // ROS_DEBUG_THROTTLE(1.0, "Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
-      // ROS_DEBUG("Slave[%d], control_word: 0x%.4x", slave_idx, ec_master.rx_pdo[slave_idx].control_word);
-      // ROS_DEBUG("Slave[%d], mode_of_operation: %d", slave_idx, ec_master.rx_pdo[slave_idx].mode_of_operation);
-      // ROS_DEBUG("%d %d", ec_master.tx_pdo[slave_idx].position_actual_value, ec_master.rx_pdo[slave_idx].target_position);
     }
 
     ec_master.update();
@@ -432,13 +418,53 @@ public:
 
   void close()
   {
-    // control_loop.stop();
-
     ec_master.close();
     ROS_INFO("EtherCAT socket closed.");
   }
 
 };
+
+
+inline void* control_loop(void* arg)
+{
+  esa::ewdl::ServoHW* servo_hw = (esa::ewdl::ServoHW*)arg;
+  servo_hw->reset_controllers = true;
+
+  struct timespec t_1, t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+
+  while (ros::ok())
+  {
+    esa::ewdl::ethercat::add_timespec(&t, servo_hw->ec_master.t_cycle + servo_hw->ec_master.t_off);
+
+    struct timespec t_left;
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, &t_left);
+
+    struct timespec t_period;
+    esa::ewdl::ethercat::diff_timespec(t, t_1, &t_period);
+
+    if (esa::ewdl::ethercat::to_nsec(t_period) < (servo_hw->ec_master.t_cycle - 100000)
+    || (esa::ewdl::ethercat::to_nsec(t_period) > (servo_hw->ec_master.t_cycle + 100000)))
+    {
+      ROS_WARN("EtherCAT Master period: %lu [ns]", esa::ewdl::ethercat::to_nsec(t_period));
+    }
+
+    const ros::Time now = ros::Time::now();
+    const ros::Duration period(esa::ewdl::ethercat::to_sec(t_period));
+
+    servo_hw->read(now, period);
+    servo_hw->act_to_jnt_state_interface->propagate();
+
+    servo_hw->controller_manager->update(now, period, servo_hw->reset_controllers);
+    servo_hw->reset_controllers = false;
+
+    servo_hw->jnt_to_act_pos_interface->propagate();
+    // servo_hw->jnt_to_act_vel_interface->propagate();
+    servo_hw->write(now, period);
+
+    t_1 = t;
+  }
+}
 
 } }  // namespace
 #endif

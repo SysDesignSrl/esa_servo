@@ -1,53 +1,15 @@
 #include "esa_servo/ewdl/hardware_interface/ewdl_hardware_interface.h"
 
 
-bool esa::ewdl::ServoHW::start()
-{
-  if (ec_master.start())
-  {
-    reset_controllers = true;
-    // control_loop.start();
-
-    ROS_INFO("EtherCAT OPERATIONAL");
-    return true;
-  }
-  else
-  {
-    ROS_ERROR("EtherCAT failed to enter state OPERATIONAL");
-    return false;
-  }
-}
-
-
-bool esa::ewdl::ServoHW::start(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
-{
-  if (start())
-  {
-    res.success = true;
-    res.message = "EtherCAT OPERATIONAL";
-  }
-  else
-  {
-    res.success = false;
-    res.message = "EtherCAT failed to enter state OPERATIONAL";
-  }
-
-  return true;
-}
-
-
 bool esa::ewdl::ServoHW::fault_reset()
 {
   if (ec_master.fault_reset())
   {
     reset_controllers = true;
-
-    ROS_INFO("Fault Reset");
     return true;
   }
   else
   {
-    ROS_ERROR("Failed to Fault Reset");
     return false;
   }
 }
@@ -75,13 +37,10 @@ bool esa::ewdl::ServoHW::ready_to_switch_on()
   if (ec_master.ready_to_switch_on())
   {
     reset_controllers = true;
-
-    ROS_INFO("Ready to Switch On");
     return true;
   }
   else
   {
-    ROS_ERROR("Failed to enter state 'Ready to Switch On'");
     return false;
   }
 }
@@ -109,13 +68,10 @@ bool esa::ewdl::ServoHW::switch_on()
   if (ec_master.switch_on())
   {
     reset_controllers = true;
-
-    ROS_INFO("Switch On");
     return true;
   }
   else
   {
-    ROS_ERROR("Failed to Switch On");
     return false;
   }
 }
@@ -143,13 +99,10 @@ bool esa::ewdl::ServoHW::switch_off()
   if (ec_master.switch_off())
   {
     reset_controllers = true;
-
-    ROS_INFO("Switch Off");
     return true;
   }
   else
   {
-    ROS_ERROR("Failed to Switch Off");
     return false;
   }
 }
@@ -172,20 +125,60 @@ bool esa::ewdl::ServoHW::switch_off(std_srvs::TriggerRequest &req, std_srvs::Tri
 }
 
 
-bool esa::ewdl::ServoHW::start_homing()
+bool esa::ewdl::ServoHW::enable_operation()
 {
-  if (ec_master.start_homing())
+  if (ec_master.enable_operation())
   {
     reset_controllers = true;
-
-    ROS_INFO("Homing started...");
     return true;
   }
   else
   {
-    ROS_ERROR("Failed to start Homing.");
     return false;
   }
+}
+
+
+bool esa::ewdl::ServoHW::enable_operation(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (enable_operation())
+  {
+    res.success = true;
+    res.message = "Motion started.";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Failed to start motion!";
+  }
+
+  return true;
+}
+
+
+bool esa::ewdl::ServoHW::start_homing()
+{
+  if (ec_master.set_mode_of_operation(esa::ewdl::ethercat::mode_of_operation_t::HOMING))
+  {
+
+  }
+  else
+  {
+    ROS_ERROR("Failed to set Mode of Operation to: HOMING");
+    return false;
+  }
+
+  if (ec_master.start_homing())
+  {
+    reset_controllers = true;
+  }
+  else
+  {
+    ROS_ERROR("Failed to start Homing");
+    return false;
+  }
+
+  return true;
 }
 
 
@@ -208,18 +201,17 @@ bool esa::ewdl::ServoHW::start_homing(std_srvs::TriggerRequest &req, std_srvs::T
 
 bool esa::ewdl::ServoHW::start_motion()
 {
-  if (ec_master.start_cyclic_syncronous_position())
+  if (ec_master.set_mode_of_operation(esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_POSITION))
   {
     reset_controllers = true;
-
-    ROS_INFO("Motion started.");
-    return true;
   }
   else
   {
-    ROS_ERROR("Failed to start motion!");
+    ROS_ERROR("Failed to set Mode of Operation to: CYCLIC_SYNCHRONOUS_POSITION");
     return false;
   }
+
+  return true;
 }
 
 
@@ -244,12 +236,10 @@ bool esa::ewdl::ServoHW::halt()
 {
   if (ec_master.halt())
   {
-    ROS_INFO("Halt!");
     return true;
   }
   else
   {
-    ROS_ERROR("Halt failed!");
     return false;
   }
 }
@@ -276,12 +266,10 @@ bool esa::ewdl::ServoHW::quick_stop()
 {
   if (ec_master.quick_stop())
   {
-    ROS_WARN("Quick Stop!");
     return true;
   }
   else
   {
-    ROS_FATAL("Quick Stop failed!!!");
     return false;
   }
 }
@@ -308,12 +296,10 @@ bool esa::ewdl::ServoHW::set_zero_position()
 {
   if (ec_master.set_zero_position() > 0)
   {
-    ROS_INFO("Setted Zero Position.");
     return true;
   }
   else
   {
-    ROS_ERROR("Failed to set Zero Position.");
     return false;
   }
 }

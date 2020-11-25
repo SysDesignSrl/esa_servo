@@ -25,7 +25,7 @@
 #define QUICKSTOP_DECELERATION_IDX                  0x6085
 #define TORQUE_SLOPE_IDX                            0x6087
 #define HOMING_METHOD_IDX                           0x6098
-#define HOMING_SPEED_IDX                            0x6099
+#define HOMING_SPEEDS_IDX                           0x6099
 #define HOMING_ACCELERATION_IDX                     0x609A
 #define TOUCH_PROBE_FUNCTION_IDX                    0x60B8
 #define TOUCH_PROBE_STATUS_IDX                      0x60B9

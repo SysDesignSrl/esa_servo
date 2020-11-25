@@ -170,6 +170,32 @@ inline void print_ec_state(uint16 slave)
 }
 
 
+inline void print_sm(uint16 slave, int sm)
+{
+  uint16 A = ec_slave[slave].SM[sm].StartAddr;
+  uint16 L = ec_slave[slave].SM[sm].SMlength;
+  uint32 F = ec_slave[slave].SM[sm].SMflags;
+  uint8 Type = ec_slave[slave].SMtype[sm];
+
+  ROS_DEBUG("SM%d A:%4.4x L:%4d F:%8.8x Type:%d", sm, A, L, F, Type);
+}
+
+
+inline void print_fmmu(uint16 slave, int fmmu)
+{
+  uint32 Ls = ec_slave[slave].FMMU[fmmu].LogStart;
+  uint16 Ll = ec_slave[slave].FMMU[fmmu].LogLength;
+  uint8 Lsb = ec_slave[slave].FMMU[fmmu].LogStartbit;
+  uint8 Leb = ec_slave[slave].FMMU[fmmu].LogEndbit;
+  uint16 Ps = ec_slave[slave].FMMU[fmmu].PhysStart;
+  uint8 Psb = ec_slave[slave].FMMU[fmmu].PhysStartBit;
+  uint8 Ty = ec_slave[slave].FMMU[fmmu].FMMUtype;
+  uint8 Act = ec_slave[slave].FMMU[fmmu].FMMUactive;
+
+  ROS_DEBUG("FMMU%d Ls:%.8x Ll:%4.2d Lsb:%d Leb:%d Ps:%.4x Psb:%d Ty:%.2d Act:%.2d", fmmu, Ls, Ll, Lsb, Leb, Ps, Psb, Ty, Act);
+}
+
+
 inline void print_operation_mode(uint16 slave, int8 operation_mode)
 {
   switch (operation_mode)
@@ -201,62 +227,50 @@ inline void print_operation_mode(uint16 slave, int8 operation_mode)
 
 inline void print_status_word(uint16 slave, uint16 status_word)
 {
-  // Ready to Switch On
   if ((status_word >> 0) & 0x01)
   {
     ROS_INFO("%s: %s", ec_slave[slave].name, "Ready to Swith On");
   }
-  // Switched On
   if ((status_word >> 1) & 0x01)
   {
     ROS_INFO("%s: %s", ec_slave[slave].name, "Switched On");
   }
-  // Operation Enabled
   if ((status_word >> 2) & 0x01)
   {
     ROS_INFO("%s: %s", ec_slave[slave].name, "Operation Enabled");
   }
-  // Fault
   if ((status_word >> 3) & 0x01)
   {
     ROS_FATAL("%s: %s", ec_slave[slave].name, "Fault");
   }
-  // Voltage Enabled
   if ((status_word >> 4) & 0x01)
   {
     ROS_INFO("%s: %s", ec_slave[slave].name, "Voltage Enabled");
   }
-  // Quick Stop
   if ((status_word >> 5) & 0x01)
   {
     ROS_INFO("%s: %s", ec_slave[slave].name, "Quick Stop");
   }
-  // Switch On Disabled
   if ((status_word >> 6) & 0x01)
   {
     ROS_WARN("%s: %s", ec_slave[slave].name, "Switch On Disabled");
   }
-  // Warning
   if ((status_word >> 7) & 0x01)
   {
     ROS_WARN("%s: %s", ec_slave[slave].name, "Warning");
   }
-  // Remote
   if ((status_word >> 9) & 0x01)
   {
     ROS_INFO("%s: %s", ec_slave[slave].name, "Remote");
   }
-  // Target Reached
   if ((status_word >> 10) & 0x01)
   {
     ROS_INFO("%s: %s", ec_slave[slave].name, "Target Reached");
   }
-  // Internal Limit Active
   if ((status_word >> 11) & 0x01)
   {
     ROS_WARN("%s: %s", ec_slave[slave].name, "Internal Limit Active");
   }
-  // Set Point ACK
   if (!(status_word >> 12) & 0x01)
   {
     ROS_INFO("%s: %s", ec_slave[slave].name, "Previous set point already processed, waiting for new set point");
@@ -265,7 +279,6 @@ inline void print_status_word(uint16 slave, uint16 status_word)
   {
     ROS_WARN("%s: %s", ec_slave[slave].name, "Previous set point still in process, set point overwriting shall be accepted");
   }
-  // Following Error
   if (!(status_word >> 13) & 0x01)
   {
     ROS_INFO("%s: %s", ec_slave[slave].name, "No following error");
