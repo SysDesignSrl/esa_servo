@@ -2,10 +2,14 @@
 ## EtherCAT Master ##
 #####################
 
-ifname: eno1
+ifname: enp0s31f6
   # EtherCAT Master interface
 slaves:
   - device_name: "EWDL Servo"
+    # In Position
+    in_position_counts: 20              # Position counts to determine if the motor is in position (dynamic).
+    in_position_error_range: 10         # Position counts to determine if the motor is in position (static).
+    in_position_timing: 10              # Time duration for in-position judging condition. [x 200us]
     # Homing
     homing_method: 1                    #
     homing_speed: [ 50000, 20000 ]      # Homing Speed to switch and to return to zero.
@@ -14,9 +18,5 @@ slaves:
     home_switch: 0x08                   #
     # Following Error Window
     following_error_window: 10000       # Range of tolerated position values respect to the commanded position value.
-    # In Position
-    in_position_counts: 20              # Position counts to determine if the motor is in position (dynamic).
-    in_position_error_range: 10         # Position counts to determine if the motor is in position (static).
-    in_position_timing: 10              # Time duration for in-position judging condition. [x 200us]
     # QuickStop
     quickstop_deceleration: 3000000

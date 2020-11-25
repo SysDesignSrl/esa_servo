@@ -106,7 +106,7 @@ public:
     }
     else
     {
-      ROS_FATAL("Failed to initialize EtherCAT master.");
+      ROS_FATAL("Failed to initialize EtherCAT master");
       return false;
     }
 

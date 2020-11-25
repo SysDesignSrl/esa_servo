@@ -5,19 +5,18 @@
   <env if="$(arg debug)"
     name="ROSCONSOLE_CONFIG_FILE" value="$(find esa_servo)/rosconsole.conf"/>
 
-
   <rosparam command="load" file="$(find esa_servo)/config/hardware.yaml" />
   <rosparam command="load" file="$(find esa_servo)/config/controllers.yaml" />
   <rosparam command="load" file="$(find esa_servo)/config/joint_limits.yaml" />
 
   <!-- -->
   <node name="ewdl_driver" launch-prefix="ethercat_grant" pkg="esa_servo" type="ewdl_driver" output="screen">
-    <rosparam command="load" ns="ethercat" file="$(arg ethercat_config)"/>
+    <rosparam ns="ethercat" file="$(arg ethercat_config)"/>
   </node>
 
   <!-- -->
-  <node ns="ewdl_driver" name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"
+  <!-- <node ns="ewdl_driver" name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"
     args="/rail/controller/state
-          /rail/controller/rail_controller" />
+          /rail/controller/rail_controller" /> -->
 
 </launch>
