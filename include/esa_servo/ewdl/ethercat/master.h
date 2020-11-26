@@ -35,17 +35,17 @@ inline int slave_setup(uint16 slave)
 {
   int wkc = 0;
 
-  // PDO mapping
-  uint16 sdo_1c12[] = { 0x0001, 0x1600 };     // RxPDO1
-  uint16 sdo_1c13[] = { 0x0001, 0x1a00 };     // TxPDO1
-  wkc += writeSDO<uint16>(slave, 0x1c12, 0x00, sdo_1c12);
-  wkc += writeSDO<uint16>(slave, 0x1c13, 0x00, sdo_1c13);
+  // SyncManagers assignment
+  uint16 sdo_1c12[] = { 0x0001, 0x1600 };   // SM2
+  uint16 sdo_1c13[] = { 0x0001, 0x1A00 };   // SM3
+  wkc += writeSDO<uint16>(slave, 0x1c12, 0x01, sdo_1c12[1]);
+  wkc += writeSDO<uint16>(slave, 0x1c13, 0x01, sdo_1c13[1]);
 
-  // Sync Managers
-  uint16 sdo_1c32[] = { 0x0020, 0x0002 };
-  uint16 sdo_1c33[] = { 0x0020, 0x0002 };
-  wkc += writeSDO<uint16>(slave, 0x1c32, 0x00, sdo_1c32);
-  wkc += writeSDO<uint16>(slave, 0x1c33, 0x00, sdo_1c33);
+  // SyncManagers synchronnization
+  uint16 sdo_1c32[] = { 0x20, 0x0002 };
+  uint16 sdo_1c33[] = { 0x20, 0x0002 };
+  wkc += writeSDO<uint16>(slave, 0x1c32, 0x01, sdo_1c32[1]);
+  wkc += writeSDO<uint16>(slave, 0x1c33, 0x01, sdo_1c33[1]);
 
   return wkc;
 }
@@ -93,7 +93,7 @@ private:
   }
 
 public:
-  unsigned long t_cycle; long t_off = 0;
+  unsigned long t_cycle; int t_off = 0;
 
   esa::ewdl::ethercat::pdo::RxPDO1 rx_pdo[10];
   esa::ewdl::ethercat::pdo::TxPDO1 tx_pdo[10];
@@ -110,21 +110,21 @@ public:
   {
     if (ec_init(ifname.c_str()) > 0)
     {
-      printf("EtherCAT socket on: %s\n", ifname.c_str());
+      ROS_INFO("EtherCAT socket on: %s", ifname.c_str());
     }
     else
     {
-      printf("Coludn't initialize EtherCAT Master socket on: %s\n", ifname.c_str());
+      ROS_ERROR("Coludn't initialize EtherCAT Master socket on: %s", ifname.c_str());
       return false;
     }
 
     if (ec_config_init(FALSE) > 0)
     {
-      printf("Slaves found and configured: %d\n", ec_slavecount);
+      ROS_INFO("Slaves found and configured: %d", ec_slavecount);
     }
     else
     {
-      printf("Coludn't find and configure any slave.\n");
+      ROS_ERROR("Coludn't find and configure any slave.");
       return false;
     }
 
@@ -176,7 +176,6 @@ public:
     ec_state = ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE);
     print_ec_state(0);
 
-
     for (int i = 0; i < ec_slavecount; i++)
     {
       const uint16 slave_idx = 1 + i;
@@ -209,8 +208,8 @@ public:
       ec_writestate(slave_idx);
     }
 
-    ec_state = ec_statecheck(0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE);
-    print_ec_state(0);
+    // ec_state = ec_statecheck(0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE);
+    // print_ec_state(0);
     return true;
   }
 
@@ -232,6 +231,7 @@ public:
       tx_pdo[slave_idx] << ec_slave[slave_idx].inputs;
     }
 
+    ec_sync(ec_DCtime, t_cycle, &t_off);
     return wkc;
   }
 
@@ -367,7 +367,7 @@ public:
         const uint16 slave_idx = 1 + i;
         uint16 status_word = tx_pdo[slave_idx].status_word;
 
-        if (!(status_word >> FAULT_BIT) & 0x01) ok++;
+        if (!((status_word >> FAULT_BIT) & 0x01)) ok++;
       }
 
       iter++;
@@ -457,7 +457,7 @@ public:
         const uint16 slave_idx = 1 + i;
         uint16 status_word = tx_pdo[slave_idx].status_word;
 
-        if (!(status_word >> SWITCHED_ON_BIT) & 0x01) ok++;
+        if (!((status_word >> SWITCHED_ON_BIT) & 0x01)) ok++;
       }
 
       iter++;
@@ -472,7 +472,7 @@ public:
     for (int i = 0; i < ec_slavecount; i++)
     {
       const uint16 slave_idx = 1 + i;
-      rx_pdo[slave_idx].control_word = 0x000F;
+      rx_pdo[slave_idx].control_word |= 0x0008;
     }
 
     int iter = 0, max_iter = 10;
@@ -488,6 +488,36 @@ public:
         uint16 status_word = tx_pdo[slave_idx].status_word;
 
         if ((status_word >> OPERATION_ENABLED_BIT) & 0x01) ok++;
+      }
+
+      iter++;
+    } while (iter < max_iter && ok < ec_slavecount);
+
+    return (iter < max_iter) ? true : false;
+  }
+
+
+  bool disable_operation()
+  {
+    for (int i = 0; i < ec_slavecount; i++)
+    {
+      const uint16 slave_idx = 1 + i;
+      rx_pdo[slave_idx].control_word &= 0xFFF7;
+    }
+
+    int iter = 0, max_iter = 10;
+    int ok;
+    do
+    {
+      usleep(t_cycle/1000);
+
+      ok = 0;
+      for (int i = 0; i < ec_slavecount; i++)
+      {
+        const uint16 slave_idx = 1 + i;
+        uint16 status_word = tx_pdo[slave_idx].status_word;
+
+        if (!((status_word >> OPERATION_ENABLED_BIT) & 0x01)) ok++;
       }
 
       iter++;
@@ -517,7 +547,7 @@ public:
         const uint16 slave_idx = 1 + i;
         uint16 status_word = tx_pdo[slave_idx].status_word;
 
-        if (!(status_word >> QUICK_STOP_BIT) & 0x01) ok++;
+        if (!((status_word >> QUICK_STOP_BIT) & 0x01)) ok++;
       }
 
       iter++;
@@ -584,7 +614,7 @@ public:
     for (int i = 0; i < ec_slavecount; i++)
     {
       const uint16 slave_idx = 1 + i;
-      tx_pdo[slave_idx].mode_of_operation_display =  mode_of_operation_display;
+      mode_of_operation_display = esa::ewdl::ethercat::mode_of_operation_t(tx_pdo[slave_idx].mode_of_operation_display);
     }
     return true;
   }

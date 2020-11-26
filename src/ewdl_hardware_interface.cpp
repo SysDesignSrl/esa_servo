@@ -20,12 +20,12 @@ bool esa::ewdl::ServoHW::fault_reset(std_srvs::TriggerRequest &req, std_srvs::Tr
   if (fault_reset())
   {
     res.success = true;
-    res.message = "Fault Reset";
+    res.message = "Fault resetted";
   }
   else
   {
     res.success = false;
-    res.message = "Failed to Fault Reset";
+    res.message = "Failed to reset Fault";
   }
 
   return true;
@@ -56,7 +56,7 @@ bool esa::ewdl::ServoHW::ready_to_switch_on(std_srvs::TriggerRequest &req, std_s
   else
   {
     res.success = false;
-    res.message = "Failed to enter state 'Ready to Switch On'";
+    res.message = "Failed to enter state Ready to Switch On";
   }
 
   return true;
@@ -82,7 +82,7 @@ bool esa::ewdl::ServoHW::switch_on(std_srvs::TriggerRequest &req, std_srvs::Trig
   if (switch_on())
   {
     res.success = true;
-    res.message = "Switch On";
+    res.message = "Switched On";
   }
   else
   {
@@ -113,7 +113,7 @@ bool esa::ewdl::ServoHW::switch_off(std_srvs::TriggerRequest &req, std_srvs::Tri
   if (switch_off())
   {
     res.success = true;
-    res.message = "Switch Off";
+    res.message = "Switched Off";
   }
   else
   {
@@ -144,12 +144,43 @@ bool esa::ewdl::ServoHW::enable_operation(std_srvs::TriggerRequest &req, std_srv
   if (enable_operation())
   {
     res.success = true;
-    res.message = "Motion started.";
+    res.message = "Operation enabled";
   }
   else
   {
     res.success = false;
-    res.message = "Failed to start motion!";
+    res.message = "Failed to enable Operation";
+  }
+
+  return true;
+}
+
+
+bool esa::ewdl::ServoHW::disable_operation()
+{
+  if (ec_master.disable_operation())
+  {
+    reset_controllers = true;
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+
+bool esa::ewdl::ServoHW::disable_operation(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res)
+{
+  if (disable_operation())
+  {
+    res.success = true;
+    res.message = "Operation disabled";
+  }
+  else
+  {
+    res.success = false;
+    res.message = "Failed to disable Operation";
   }
 
   return true;
@@ -160,21 +191,21 @@ bool esa::ewdl::ServoHW::start_homing()
 {
   if (ec_master.set_mode_of_operation(esa::ewdl::ethercat::mode_of_operation_t::HOMING))
   {
-
+    ROS_INFO("Switched Mode of Operation to: HOMING");
   }
   else
   {
-    ROS_ERROR("Failed to set Mode of Operation to: HOMING");
+    ROS_ERROR("Failed to switch Mode of Operation to: HOMING");
     return false;
   }
 
   if (ec_master.start_homing())
   {
-    reset_controllers = true;
+    ROS_INFO("Homing started ...");
   }
   else
   {
-    ROS_ERROR("Failed to start Homing");
+    ROS_ERROR("Failed to start Homing procedure.");
     return false;
   }
 
@@ -187,12 +218,12 @@ bool esa::ewdl::ServoHW::start_homing(std_srvs::TriggerRequest &req, std_srvs::T
   if (start_homing())
   {
     res.success = true;
-    res.message = "Homing started...";
+    res.message = "Homing started ...";
   }
   else
   {
     res.success = false;
-    res.message = "Failed to start Homing preocedure.";
+    res.message = "Failed to start Homing procedure.";
   }
 
   return true;
@@ -201,13 +232,15 @@ bool esa::ewdl::ServoHW::start_homing(std_srvs::TriggerRequest &req, std_srvs::T
 
 bool esa::ewdl::ServoHW::start_motion()
 {
+  reset_controllers = true;
+
   if (ec_master.set_mode_of_operation(esa::ewdl::ethercat::mode_of_operation_t::CYCLIC_SYNCHRONOUS_POSITION))
   {
-    reset_controllers = true;
+    ROS_INFO("Switched Mode of Operation to: CYCLIC_SYNCHRONOUS_POSITION");
   }
   else
   {
-    ROS_ERROR("Failed to set Mode of Operation to: CYCLIC_SYNCHRONOUS_POSITION");
+    ROS_ERROR("Failed to switch Mode of Operation to: CYCLIC_SYNCHRONOUS_POSITION");
     return false;
   }
 

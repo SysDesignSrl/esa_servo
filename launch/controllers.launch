@@ -15,8 +15,8 @@
   </node>
 
   <!-- -->
-  <!-- <node ns="ewdl_driver" name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"
+  <node ns="ewdl_driver" name="controller_spawner" pkg="controller_manager" type="spawner" output="screen"
     args="/rail/controller/state
-          /rail/controller/rail_controller" /> -->
+          /rail/controller/rail_controller" />
 
 </launch>

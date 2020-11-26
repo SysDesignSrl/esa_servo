@@ -104,6 +104,7 @@ int main (int argc, char* argv[])
   auto switch_on_srv = node.advertiseService("switch_on", &esa::ewdl::ServoHW::switch_on, &servo_hw);
   auto switch_off_srv = node.advertiseService("switch_off", &esa::ewdl::ServoHW::switch_off, &servo_hw);
   auto enable_operation_srv = node.advertiseService("enable_operation", &esa::ewdl::ServoHW::enable_operation, &servo_hw);
+  auto disable_operation_srv = node.advertiseService("disable_operation", &esa::ewdl::ServoHW::disable_operation, &servo_hw);
   auto start_homing_srv = node.advertiseService("start_homing", &esa::ewdl::ServoHW::start_homing, &servo_hw);
   auto start_motion_srv = node.advertiseService("start_motion", &esa::ewdl::ServoHW::start_motion, &servo_hw);
   auto halt_srv = node.advertiseService("halt", &esa::ewdl::ServoHW::halt, &servo_hw);

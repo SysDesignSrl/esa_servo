@@ -306,6 +306,8 @@ public:
       ROS_FATAL("pthread_attr_destroy");
       return false;
     }
+
+    return true;
   }
 
   /* */
@@ -327,6 +329,10 @@ public:
   /**/
   bool enable_operation();
   bool enable_operation(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
+
+  /**/
+  bool disable_operation();
+  bool disable_operation(std_srvs::TriggerRequest &req, std_srvs::TriggerResponse &res);
 
   /* */
   bool start_homing();
@@ -362,7 +368,7 @@ public:
       const uint16 slave_idx = 1 + i;
       uint16 status_word = ec_master.tx_pdo[slave_idx].status_word;
       int8 mode_of_operation_display = ec_master.tx_pdo[slave_idx].mode_of_operation_display;
-      int32 position_actual_value = ec_master.tx_pdo[slave_idx].position_actual_value / POSITION_STEP_FACTOR;
+      int32 position_actual_value = ec_master.tx_pdo[slave_idx].position_actual_value;
 
       status.ready_to_switch_on = (status_word >> 0) & 0x01;
       status.switched_on = (status_word >> 1) & 0x01;
@@ -395,7 +401,7 @@ public:
           break;
       }
 
-      a_pos[i] = position_actual_value;
+      a_pos[i] = position_actual_value / POSITION_STEP_FACTOR;
     }
   }
 
@@ -407,7 +413,9 @@ public:
     for (int i = 0; i < n_actuators; i++)
     {
       const uint16 slave_idx = 1 + i;
-      ec_master.rx_pdo[slave_idx].target_position = a_pos_cmd[i] * POSITION_STEP_FACTOR;
+      int32 target_position = POSITION_STEP_FACTOR * a_pos_cmd[i];
+
+      ec_master.rx_pdo[slave_idx].target_position = target_position;
       ec_master.rx_pdo[slave_idx].touch_probe_function = 0;
       ec_master.rx_pdo[slave_idx].physical_outputs = 0x0000;
     }
@@ -436,6 +444,7 @@ inline void* control_loop(void* arg)
   while (ros::ok())
   {
     esa::ewdl::ethercat::add_timespec(&t, servo_hw->ec_master.t_cycle + servo_hw->ec_master.t_off);
+    // printf("t_off: %d\n", servo_hw->ec_master.t_off);
 
     struct timespec t_left;
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, &t_left);
@@ -451,6 +460,7 @@ inline void* control_loop(void* arg)
 
     const ros::Time now = ros::Time::now();
     const ros::Duration period(esa::ewdl::ethercat::to_sec(t_period));
+    // printf("t_period: %.3f", t_period);
 
     servo_hw->read(now, period);
     servo_hw->act_to_jnt_state_interface->propagate();
