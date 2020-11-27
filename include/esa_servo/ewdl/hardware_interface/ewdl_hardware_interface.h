@@ -242,7 +242,7 @@ public:
   }
 
 
-  bool start()
+  bool start(int cpu_affinity = 0)
   {
     if (!ec_master.start())
     {
@@ -260,7 +260,7 @@ public:
     }
 
     cpu_set_t cpu_set;
-    CPU_ZERO(&cpu_set); CPU_SET(1, &cpu_set);
+    CPU_ZERO(&cpu_set); CPU_SET(cpu_affinity, &cpu_set);
     errno = pthread_attr_setaffinity_np(&pthread_attr, sizeof(cpu_set), &cpu_set);
     if (errno != 0)
     {

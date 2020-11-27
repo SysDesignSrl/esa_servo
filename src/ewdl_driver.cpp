@@ -117,7 +117,8 @@ int main (int argc, char* argv[])
   auto status_pub = node.advertise<industrial_msgs::RobotStatus>("status", 10);
 
   // Start
-  if (servo_hw.start())
+  auto cpu_affinity = node.param<int>("cpu_affinity", 0);
+  if (servo_hw.start(cpu_affinity))
   {
     ROS_INFO("Hardware Interface started.");
   }
