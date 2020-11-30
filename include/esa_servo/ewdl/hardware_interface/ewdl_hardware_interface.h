@@ -439,7 +439,12 @@ inline void* control_loop(void* arg)
   servo_hw->reset_controllers = true;
 
   struct timespec t_1, t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
+  errno = clock_gettime(CLOCK_MONOTONIC, &t);
+  if (errno != 0)
+  {
+    ROS_FATAL("clock_gettime");
+    return NULL;
+  }
 
   while (ros::ok())
   {
@@ -447,7 +452,12 @@ inline void* control_loop(void* arg)
     // printf("t_off: %d\n", servo_hw->ec_master.t_off);
 
     struct timespec t_left;
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, &t_left);
+    errno = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, &t_left);
+    if (errno != 0)
+    {
+      ROS_FATAL("clock_nanosleep");
+      return NULL;
+    }
 
     struct timespec t_period;
     esa::ewdl::ethercat::diff_timespec(t, t_1, &t_period);
