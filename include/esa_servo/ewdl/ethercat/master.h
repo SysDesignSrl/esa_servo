@@ -36,10 +36,10 @@ inline int slave_setup(uint16 slave)
   int wkc = 0;
 
   // SyncManagers assignment
-  uint16 sdo_1c12[] = { 0x0001, 0x1600 };   // SM2
-  uint16 sdo_1c13[] = { 0x0001, 0x1A00 };   // SM3
-  wkc += writeSDO<uint16>(slave, 0x1c12, 0x01, sdo_1c12[1]);
-  wkc += writeSDO<uint16>(slave, 0x1c13, 0x01, sdo_1c13[1]);
+  uint16 sdo_1c12[] = { 0x01, 0x1600 };     // SM2
+  uint16 sdo_1c13[] = { 0x01, 0x1A00 };     // SM3
+  wkc += writeSDO<uint16>(slave, 0x1c12, 0x00, sdo_1c12);
+  wkc += writeSDO<uint16>(slave, 0x1c13, 0x00, sdo_1c13);
 
   // SyncManagers synchronnization
   uint16 sdo_1c32[] = { 0x20, 0x0002 };
