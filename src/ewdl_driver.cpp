@@ -169,6 +169,7 @@ int main (int argc, char* argv[])
       uint16 slave_idx = 1;
       uint32 alarm_code;
       servo_hw.get_alarm_code(slave_idx, alarm_code);
+      ROS_WARN("ALARM CODE: 0x%.8X", alarm_code);
     }
 
     status_pub.publish(status_msg);
