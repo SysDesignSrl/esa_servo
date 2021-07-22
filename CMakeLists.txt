@@ -136,7 +136,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
-  $ENV{SNAPCRAFT_PART_INSTALL}/opt/ros/kinetic/include/soem
+  $ENV{SNAPCRAFT_PART_INSTALL}/opt/ros/$ENV{ROS_DISTRO}/include/soem
 )
 
 # message(STATUS "catkin_INCLUDE_DIRS=${catkin_INCLUDE_DIRS}")
@@ -187,7 +187,10 @@ target_link_libraries(step_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 # )
 
 ## Mark executables for installation
-install(TARGETS ewdl_driver RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+install(
+  TARGETS ewdl_driver
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
