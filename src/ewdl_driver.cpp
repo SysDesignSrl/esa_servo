@@ -159,17 +159,28 @@ int main (int argc, char* argv[])
     if (servo_hw.status.fault)
     {
       uint16 slave_idx = 1;
+
       uint16 error_code;
       servo_hw.get_error_code(slave_idx, error_code);
       status_msg.error_code = error_code;
+      ROS_ERROR_THROTTLE(5.0, "ERROR CODE: 0x%.4X", error_code);
+
+      uint32 alarm_code;
+      servo_hw.get_alarm_code(slave_idx, alarm_code);
+      ROS_ERROR_THROTTLE(5.0, "ALARM CODE: 0x%.8X", alarm_code);
     }
 
     if (servo_hw.status.warning)
     {
       uint16 slave_idx = 1;
+
+      uint16 error_code;
+      servo_hw.get_error_code(slave_idx, error_code);
+      ROS_WARN_THROTTLE(5.0, "ERROR CODE: 0x%.4X", error_code);
+
       uint32 alarm_code;
       servo_hw.get_alarm_code(slave_idx, alarm_code);
-      ROS_WARN("ALARM CODE: 0x%.8X", alarm_code);
+      ROS_WARN_THROTTLE(5.0, "ALARM CODE: 0x%.8X", alarm_code);
     }
 
     status_pub.publish(status_msg);
